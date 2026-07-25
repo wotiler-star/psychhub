@@ -9,7 +9,9 @@ process.env.JWT_SECRET = process.env.JWT_SECRET || 'e2e-dev-secret-change-me';
 
 import { Test } from '@nestjs/testing';
 import { ValidationPipe } from '@nestjs/common';
+import { DocumentBuilder, SwaggerModule } from '@nestjs/swagger';
 import helmet from 'helmet';
+import { json, urlencoded } from 'express';
 import { PrismaService } from '../src/prisma/prisma.service';
 import { MockPrismaService } from './prisma.mock';
 import { AllExceptionsFilter } from '../src/common/all-exceptions.filter';
@@ -24,8 +26,48 @@ async function bootstrap() {
     .useValue(mock)
     .compile();
 
+  // 镜像 main.ts：生产关闭 Swagger + 启用严格 CSP；非生产保留 Swagger 且 CSP 关
+  const isProd = process.env.NODE_ENV === 'production';
+
   const app = moduleRef.createNestApplication();
-  app.use(helmet({ contentSecurityPolicy: false }));
+  app.use(
+    helmet({
+      contentSecurityPolicy: isProd
+        ? {
+            directives: {
+              defaultSrc: ["'self'"],
+              baseUri: ["'self'"],
+              frameAncestors: ["'none'"],
+              objectSrc: ["'none'"],
+              scriptSrc: ["'self'"],
+              styleSrc: ["'self'"],
+              imgSrc: ["'self'", 'data:'],
+            },
+          }
+        : false,
+    }),
+  );
+  app.use(json({ limit: '1mb' })); // 与生产方式一致的 body 限制
+  app.use(urlencoded({ extended: true, limit: '1mb' }));
+  app.use(
+    (err: any, _req: any, res: any, next: (e?: any) => void) => {
+      if (err && (err.type === 'entity.too.large' || err.status === 413)) {
+        return res.status(413).json({
+          statusCode: 413,
+          message: '请求体过大（上限 1MB）',
+          timestamp: new Date().toISOString(),
+        });
+      }
+      if (err && err.type === 'entity.parse.failed') {
+        return res.status(400).json({
+          statusCode: 400,
+          message: '请求体 JSON 格式错误',
+          timestamp: new Date().toISOString(),
+        });
+      }
+      next(err);
+    },
+  );
   app.useGlobalFilters(new AllExceptionsFilter());
   app.useGlobalPipes(
     new ValidationPipe({ whitelist: true, transform: true, forbidNonWhitelisted: false }),
@@ -42,10 +84,26 @@ async function bootstrap() {
     credentials: true,
   });
   app.setGlobalPrefix('api');
+
+  // 仅非生产环境开放 Swagger（与 main.ts 一致）
+  if (!isProd) {
+    const config = new DocumentBuilder()
+      .setTitle('心理学聚合平台 API (E2E)')
+      .setDescription('本地真 NestJS + 内存 Mock Prisma 预览')
+      .setVersion('1.0')
+      .addBearerAuth()
+      .build();
+    const document = SwaggerModule.createDocument(app, config);
+    SwaggerModule.setup('api/docs', app, document);
+  }
+
   await app.init();
 
   const port = process.env.PORT ? Number(process.env.PORT) : 3001;
   await app.listen(port);
+  const server = app.getHttpServer();
+  server.requestTimeout = 30000;
+  server.headersTimeout = 35000;
   console.log(
     `🚀 E2E 后端就绪（真 NestJS + 内存 Mock Prisma，无 PG）: http://localhost:${port}/api`,
   );
