@@ -1,0 +1,347 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>全球心理学专业网站 TOP50 调研分析报告</title>
+<style>
+:root{--primary:#4f46e5;--primary-light:#eef2ff;--accent:#0ea5e9;--text:#1e293b;--muted:#64748b;--bg:#f8fafc;--card:#ffffff;--border:#e2e8f0;--green:#059669;--orange:#d97706;--red:#dc2626;--purple:#7c3aed;}
+*{margin:0;padding:0;box-sizing:border-box;}
+body{font-family:"Microsoft YaHei","PingFang SC",-apple-system,sans-serif;color:var(--text);background:var(--bg);line-height:1.75;font-size:15px;}
+.container{max-width:1100px;margin:0 auto;padding:0 24px 80px;}
+header.hero{background:linear-gradient(135deg,#4f46e5 0%,#7c3aed 55%,#0ea5e9 100%);color:#fff;padding:64px 24px 56px;text-align:center;}
+header.hero h1{font-size:34px;letter-spacing:1px;margin-bottom:14px;}
+header.hero p{opacity:.92;max-width:760px;margin:0 auto;font-size:15px;}
+.meta-chips{margin-top:22px;display:flex;gap:12px;justify-content:center;flex-wrap:wrap;}
+.chip{background:rgba(255,255,255,.16);border:1px solid rgba(255,255,255,.35);border-radius:999px;padding:5px 16px;font-size:13px;}
+h2{font-size:24px;margin:56px 0 8px;color:var(--primary);border-left:5px solid var(--primary);padding-left:14px;}
+h3{font-size:18px;margin:32px 0 12px;color:var(--text);}
+p.section-desc{color:var(--muted);margin-bottom:20px;}
+.card{background:var(--card);border:1px solid var(--border);border-radius:12px;padding:24px 28px;margin:18px 0;box-shadow:0 1px 3px rgba(15,23,42,.05);}
+.grid{display:grid;gap:16px;}
+.grid-4{grid-template-columns:repeat(4,1fr);}
+.grid-3{grid-template-columns:repeat(3,1fr);}
+.grid-2{grid-template-columns:repeat(2,1fr);}
+@media(max-width:860px){.grid-4,.grid-3,.grid-2{grid-template-columns:1fr 1fr;}}
+@media(max-width:560px){.grid-4,.grid-3,.grid-2{grid-template-columns:1fr;}}
+.stat{background:var(--card);border:1px solid var(--border);border-radius:12px;padding:20px;text-align:center;}
+.stat .num{font-size:28px;font-weight:700;color:var(--primary);}
+.stat .lbl{font-size:13px;color:var(--muted);margin-top:4px;}
+table{width:100%;border-collapse:collapse;background:#fff;font-size:13.5px;margin:14px 0;}
+th{background:var(--primary);color:#fff;padding:10px 8px;text-align:left;font-weight:600;white-space:nowrap;}
+td{padding:9px 8px;border-bottom:1px solid var(--border);vertical-align:top;}
+tr:nth-child(even) td{background:#f8faff;}
+tr:hover td{background:var(--primary-light);}
+.table-wrap{overflow-x:auto;border-radius:10px;border:1px solid var(--border);}
+.tag{display:inline-block;border-radius:6px;padding:1px 8px;font-size:12px;font-weight:600;white-space:nowrap;}
+.tag-media{background:#eef2ff;color:#4f46e5;}
+.tag-saas{background:#ecfdf5;color:#059669;}
+.tag-therapy{background:#fdf2f8;color:#db2777;}
+.tag-org{background:#fff7ed;color:#d97706;}
+.tag-tool{background:#f0f9ff;color:#0284c7;}
+.tag-app{background:#f5f3ff;color:#7c3aed;}
+.tag-edu{background:#fefce8;color:#a16207;}
+.rank{display:inline-block;width:30px;height:30px;line-height:30px;text-align:center;border-radius:8px;background:var(--primary-light);color:var(--primary);font-weight:700;font-size:13px;}
+.rank.top3{background:var(--primary);color:#fff;}
+.bar-row{display:flex;align-items:center;gap:10px;margin:7px 0;}
+.bar-label{width:170px;font-size:13px;text-align:right;color:var(--text);flex-shrink:0;}
+.bar-track{flex:1;background:#eef1f6;border-radius:6px;height:22px;position:relative;}
+.bar-fill{height:100%;border-radius:6px;background:linear-gradient(90deg,#4f46e5,#818cf8);display:flex;align-items:center;justify-content:flex-end;padding-right:8px;color:#fff;font-size:12px;font-weight:600;min-width:52px;}
+.bar-fill.c2{background:linear-gradient(90deg,#0ea5e9,#7dd3fc);}
+.bar-fill.c3{background:linear-gradient(90deg,#059669,#6ee7b7);}
+.bar-fill.c4{background:linear-gradient(90deg,#d97706,#fcd34d);}
+.callout{border-left:4px solid var(--accent);background:#f0f9ff;border-radius:0 10px 10px 0;padding:16px 20px;margin:18px 0;font-size:14px;}
+.callout.warn{border-color:var(--orange);background:#fffbeb;}
+.callout.good{border-color:var(--green);background:#ecfdf5;}
+.callout b{color:var(--primary);}
+ul.tight{padding-left:22px;margin:8px 0;}
+ul.tight li{margin:6px 0;}
+.foot{color:var(--muted);font-size:12.5px;margin-top:40px;border-top:1px solid var(--border);padding-top:16px;}
+.toc{display:grid;grid-template-columns:repeat(2,1fr);gap:8px 24px;}
+.toc a{color:var(--primary);text-decoration:none;font-size:14px;padding:6px 10px;border-radius:8px;display:block;}
+.toc a:hover{background:var(--primary-light);}
+.swot{display:grid;grid-template-columns:1fr 1fr;gap:14px;}
+.swot .cell{border-radius:10px;padding:16px 18px;font-size:13.5px;}
+.swot .s{background:#ecfdf5;border:1px solid #a7f3d0;}
+.swot .w{background:#fef2f2;border:1px solid #fecaca;}
+.swot .o{background:#eff6ff;border:1px solid #bfdbfe;}
+.swot .t{background:#fffbeb;border:1px solid #fde68a;}
+.swot h4{margin-bottom:8px;font-size:14.5px;}
+</style>
+</head>
+<body>
+<header class="hero">
+<h1>全球心理学专业网站 TOP50 调研分析报告</h1>
+<p>面向「全球心理学专业领域聚合平台」建设的竞品与生态调研 —— 基于 Similarweb（2026年5月心理健康类目榜单）、Semrush / Exploding Topics、Ahrefs 多源流量数据交叉验证</p>
+<div class="meta-chips">
+<span class="chip">报告日期：2026年7月24日</span>
+<span class="chip">样本：全球 TOP50 心理学专业网站</span>
+<span class="chip">用途：聚合平台立项调研</span>
+</div>
+</header>
+<div class="container">
+
+<h2 id="toc">目录</h2>
+<div class="card toc">
+<a href="#s1">一、调研背景与方法</a>
+<a href="#s2">二、总体格局：市场结构总览</a>
+<a href="#s3">三、TOP50 网站完整清单与逐站分析</a>
+<a href="#s4">四、分类深度分析（六大赛道）</a>
+<a href="#s5">五、流量与用户行为洞察</a>
+<a href="#s6">六、商业模式对比</a>
+<a href="#s7">七、对聚合平台的启示（SWOT 与机会点）</a>
+<a href="#s8">八、建设建议与功能蓝图</a>
+</div>
+
+<h2 id="s1">一、调研背景与方法</h2>
+<div class="card">
+<h3>1.1 调研目的</h3>
+<p>为建设「全球心理学专业领域聚合平台」提供决策依据：摸清全球头部心理学网站的<b>定位、流量、功能、商业模式</b>，识别市场空白与聚合机会，明确平台差异化路径。</p>
+<h3>1.2 数据来源与口径</h3>
+<ul class="tight">
+<li><b>主榜单</b>：Similarweb「Health &gt; Mental Health」类目全球 TOP50 排名（2026年5月数据），该榜单以访问量排序，是目前最权威的公开心理健康网站排名；</li>
+<li><b>交叉验证</b>：Exploding Topics / Semrush 全球心理健康站点月访问量（2026年4-5月）、Ahrefs 搜索流量与关键词数据；</li>
+<li><b>补充样本</b>：由于 Similarweb 心理健康类目未覆盖学术协会（APA 归入科学类）与人格测评（16Personalities 归入 HR 类），报告在分类分析章节补充了 APA、SimplyPsychology、16Personalities、NIMH 等跨类目心理学核心站点，保证「心理学专业领域」全貌；</li>
+<li><b>指标说明</b>：月访问量（Visits）、人均访问页数（Pages/Visit）、平均停留时长、跳出率（Bounce Rate）。不同数据商口径有差异，报告标注来源。</li>
+</ul>
+</div>
+
+<h2 id="s2">二、总体格局：市场结构总览</h2>
+<p class="section-desc">全球心理学网站生态可划分为六大赛道，头部效应显著，但「聚合型平台」目前仍是空白。</p>
+<div class="grid grid-4">
+<div class="stat"><div class="num">2330万</div><div class="lbl">Psychology Today 月访问量（全类目第一）</div></div>
+<div class="stat"><div class="num">6 大</div><div class="lbl">赛道：媒体/SaaS/咨询/机构/测评/冥想</div></div>
+<div class="stat"><div class="num">~40%</div><div class="lbl">TOP50 中 B2B 工具与服务平台占比</div></div>
+<div class="stat"><div class="num">0</div><div class="lbl">真正意义上的全球心理学「聚合平台」</div></div>
+</div>
+<div class="card">
+<h3>2.1 六大赛道结构（TOP50 内分布）</h3>
+<div class="bar-row"><div class="bar-label">在线咨询/治疗平台</div><div class="bar-track"><div class="bar-fill" style="width:82%">14 个</div></div></div>
+<div class="bar-row"><div class="bar-label">执业者 SaaS/EHR 工具</div><div class="bar-track"><div class="bar-fill c2" style="width:76%">13 个</div></div></div>
+<div class="bar-row"><div class="bar-label">内容媒体/科普</div><div class="bar-track"><div class="bar-fill c3" style="width:53%">9 个</div></div></div>
+<div class="bar-row"><div class="bar-label">公益组织/政府/协会</div><div class="bar-track"><div class="bar-fill c4" style="width:47%">8 个</div></div></div>
+<div class="bar-row"><div class="bar-label">冥想/自助应用</div><div class="bar-track"><div class="bar-fill" style="width:24%">4 个</div></div></div>
+<div class="bar-row"><div class="bar-label">测评/专业资源工具</div><div class="bar-track"><div class="bar-fill c2" style="width:12%">2 个</div></div></div>
+<div class="callout"><b>关键发现：</b>流量最大的是「找咨询师目录 + 内容」的 Psychology Today（月访问 2330 万），但 TOP50 中超过一半是面向咨询师的 B2B 工具（SaaS/EHR/视频问诊）和在线治疗平台，说明<b>心理服务的「供给侧数字化」已是最大产业主线</b>；而面向学习者、研究者、从业者的「专业知识聚合」严重缺位——这正是聚合平台的切入点。</div>
+</div>
+<h2 id="s3">三、TOP50 网站完整清单与逐站分析</h2>
+<p class="section-desc">依据 Similarweb 2026年5月「心理健康」类目全球排名。表中给出每站的类型、总部、用户行为指标与一句话定位分析（停留时长/页数/跳出率为 Similarweb 口径）。</p>
+<div class="table-wrap">
+<table>
+<tr><th>#</th><th>网站</th><th>类型</th><th>国家</th><th>停留</th><th>页/访</th><th>跳出率</th><th>定位与分析</th></tr>
+<tr><td><span class="rank top3">1</span></td><td><b>psychologytoday.com</b></td><td><span class="tag tag-media">媒体+目录</span></td><td>美国</td><td>2:38</td><td>3.22</td><td>53.6%</td><td>全球最大心理学门户：科普内容 + 全球最大咨询师目录（Find a Therapist），月访问约2330万，62.5%为女性用户，「内容引流→目录变现」的标杆模式</td></tr>
+<tr><td><span class="rank top3">2</span></td><td><b>simplepractice.com</b></td><td><span class="tag tag-saas">执业SaaS</span></td><td>美国</td><td>9:01</td><td>10.59</td><td>29.3%</td><td>北美最大心理咨询执业管理 SaaS（预约、病历、计费、远程会谈），月访问约970万，高粘性工作台型产品</td></tr>
+<tr><td><span class="rank top3">3</span></td><td>myvccs.com</td><td><span class="tag tag-saas">机构门户</span></td><td>美国</td><td>0:56</td><td>1.89</td><td>43.6%</td><td>社区服务/心理健康服务机构门户入口，短访问、工具跳板属性</td></tr>
+<tr><td><span class="rank">4</span></td><td>doxy.me</td><td><span class="tag tag-saas">远程问诊</span></td><td>美国</td><td>4:51</td><td>3.95</td><td>35.5%</td><td>免费 HIPAA 合规远程视频问诊工具，被大量心理咨询师用作线上会谈室</td></tr>
+<tr><td><span class="rank">5</span></td><td>clientsecure.me</td><td><span class="tag tag-saas">客户门户</span></td><td>美国</td><td>3:40</td><td>4.40</td><td>31.2%</td><td>SimplePractice 旗下客户端门户（预约/付款/视频），流量印证 SimplePractice 生态规模</td></tr>
+<tr><td><span class="rank">6</span></td><td>headway.co</td><td><span class="tag tag-therapy">保险撮合</span></td><td>美国</td><td>4:15</td><td>5.65</td><td>36.3%</td><td>「保险内心理治疗」撮合独角兽：帮咨询师接入医保网络，月访问约530万，增长最快的模式之一</td></tr>
+<tr><td><span class="rank">7</span></td><td>growtherapy.com</td><td><span class="tag tag-therapy">保险撮合</span></td><td>美国</td><td>6:00</td><td>8.42</td><td>28.7%</td><td>Headway 同赛道竞品，咨询师匹配 + 保险结算 + 执业支持三合一</td></tr>
+<tr><td><span class="rank">8</span></td><td><b>betterhelp.com</b></td><td><span class="tag tag-therapy">在线治疗</span></td><td>美国</td><td>3:25</td><td>4.37</td><td>40.0%</td><td>全球最大 DTC 在线心理咨询平台（订阅制，周付约$65-100），月访问约520万，营销驱动增长的代表</td></tr>
+<tr><td><span class="rank">9</span></td><td>therapynotes.com</td><td><span class="tag tag-saas">EHR</span></td><td>美国</td><td>16:43</td><td>17.08</td><td>9.8%</td><td>心理健康专用电子病历（EHR），停留16分钟+/17页、跳出率不足10%，全榜粘性之王</td></tr>
+<tr><td><span class="rank">10</span></td><td>therapyportal.com</td><td><span class="tag tag-saas">客户门户</span></td><td>美国</td><td>4:02</td><td>5.55</td><td>28.4%</td><td>TherapyNotes 配套患者门户，预约与文书电子签</td></tr>
+<tr><td><span class="rank">11</span></td><td>trendyol-milla.com</td><td><span class="tag tag-tool">类目噪声</span></td><td>土耳其</td><td>3:39</td><td>7.47</td><td>38.2%</td><td>电商站被误归入该类目（榜单噪声），分析时应剔除，不影响整体结论</td></tr>
+<tr><td><span class="rank">12</span></td><td><b>verywellmind.com</b></td><td><span class="tag tag-media">科普媒体</span></td><td>美国</td><td>1:17</td><td>1.75</td><td>64.7%</td><td>Dotdash Meredith 旗下心理科普媒体，月搜索流量约670万，SEO 长文+医学审核体系，典型「搜索进站-读完即走」</td></tr>
+<tr><td><span class="rank">13</span></td><td>loopearplugs.com</td><td><span class="tag tag-tool">感官产品</span></td><td>比利时</td><td>2:21</td><td>4.47</td><td>45.0%</td><td>降噪耳塞电商（感官敏感/焦虑人群），说明「心理健康周边硬件」已成规模</td></tr>
+<tr><td><span class="rank">14</span></td><td>rula.com</td><td><span class="tag tag-therapy">保险撮合</span></td><td>美国</td><td>2:39</td><td>4.00</td><td>45.0%</td><td>保险内治疗匹配平台（原 Path），主打「按医保找咨询师」</td></tr>
+<tr><td><span class="rank">15</span></td><td>zandahealth.com</td><td><span class="tag tag-saas">执业SaaS</span></td><td>澳大利亚</td><td>6:47</td><td>5.57</td><td>30.7%</td><td>澳洲执业管理软件（原 Power Diary），澳新市场渗透率高</td></tr>
+<tr><td><span class="rank">16</span></td><td>psychologies.ru</td><td><span class="tag tag-media">大众媒体</span></td><td>俄罗斯</td><td>1:09</td><td>2.08</td><td>43.8%</td><td>俄语版《Psychologies》杂志，俄语区最大心理媒体，证明非英语区域市场价值</td></tr>
+<tr><td><span class="rank">17</span></td><td>helloalma.com</td><td><span class="tag tag-therapy">保险撮合</span></td><td>美国</td><td>5:11</td><td>6.32</td><td>40.4%</td><td>Alma：咨询师会员制执业支持 + 保险计费，B2B2C 模式</td></tr>
+<tr><td><span class="rank">18</span></td><td><b>calm.com</b></td><td><span class="tag tag-app">冥想应用</span></td><td>美国</td><td>1:12</td><td>2.53</td><td>50.4%</td><td>全球最大冥想/睡眠应用之一（估值曾超20亿美元），网站为 App 订阅导流</td></tr>
+<tr><td><span class="rank">19</span></td><td>halaxy.com</td><td><span class="tag tag-saas">执业SaaS</span></td><td>澳大利亚</td><td>10:51</td><td>9.00</td><td>24.6%</td><td>免费健康执业管理平台，靠支付与增值服务变现</td></tr>
+<tr><td><span class="rank">20</span></td><td>talkiatry.com</td><td><span class="tag tag-therapy">在线精神科</span></td><td>美国</td><td>5:08</td><td>3.93</td><td>44.3%</td><td>保险内在线精神科诊疗（可开药），精神科医生雇佣制，与心理咨询形成互补</td></tr>
+<tr><td><span class="rank">21</span></td><td>h-navi.jp</td><td><span class="tag tag-media">垂直媒体</span></td><td>日本</td><td>5:27</td><td>3.60</td><td>51.7%</td><td>LITALICO 发达障害（发育障碍）门户，日本特殊需求家庭社区，垂直人群深耕典范</td></tr>
+<tr><td><span class="rank">22</span></td><td><b>talkspace.com</b></td><td><span class="tag tag-therapy">在线治疗</span></td><td>美国</td><td>2:51</td><td>4.72</td><td>45.9%</td><td>上市在线治疗平台（NASDAQ:TALK），文字+视频治疗，重心转向保险与企业客户</td></tr>
+<tr><td><span class="rank">23</span></td><td>theranest.com</td><td><span class="tag tag-saas">执业SaaS</span></td><td>美国</td><td>12:13</td><td>15.74</td><td>23.6%</td><td>中小咨询机构管理软件（Therapy Brands 旗下），高粘性工作台</td></tr>
+<tr><td><span class="rank">24</span></td><td><b>7cups.com</b></td><td><span class="tag tag-therapy">互助社区</span></td><td>美国</td><td>7:11</td><td>12.57</td><td>30.5%</td><td>免费情感支持社区：志愿「倾听者」+ 低价咨询，全球189国、多语言，UGC 互助模式代表</td></tr>
+<tr><td><span class="rank">25</span></td><td>lifestance.com</td><td><span class="tag tag-therapy">连锁诊所</span></td><td>美国</td><td>1:26</td><td>2.66</td><td>61.6%</td><td>全美最大线下+线上混合心理诊所连锁（上市公司），600+诊所</td></tr>
+<tr><td><span class="rank">26</span></td><td>treatmyocd.com</td><td><span class="tag tag-therapy">专病治疗</span></td><td>美国</td><td>3:19</td><td>3.11</td><td>45.6%</td><td>NOCD：强迫症 ERP 疗法专科平台，「单病种深耕」模式的成功样本</td></tr>
+<tr><td><span class="rank">27</span></td><td>additudemag.com</td><td><span class="tag tag-media">垂直媒体</span></td><td>美国</td><td>1:46</td><td>2.17</td><td>53.8%</td><td>ADDitude：ADHD 垂直媒体（杂志起家），月访问约140万，专病内容+网课+讲座变现</td></tr>
+<tr><td><span class="rank">28</span></td><td><b>headspace.com</b></td><td><span class="tag tag-app">冥想应用</span></td><td>美国/英国</td><td>1:29</td><td>2.96</td><td>44.9%</td><td>与 Calm 双雄并立的正念应用，已合并 Ginger 拓展企业 EAP 服务</td></tr>
+<tr><td><span class="rank">29</span></td><td>focusmate.com</td><td><span class="tag tag-tool">效率工具</span></td><td>美国</td><td>7:01</td><td>3.63</td><td>37.1%</td><td>虚拟自习室（身体伴同 Body Doubling），ADHD/拖延人群喜爱，行为心理学产品化</td></tr>
+<tr><td><span class="rank">30</span></td><td>springhealth.com</td><td><span class="tag tag-therapy">企业EAP</span></td><td>美国</td><td>5:08</td><td>5.35</td><td>31.3%</td><td>AI 精准匹配的企业员工心理健康平台（EAP 2.0），估值33亿美元</td></tr>
+<tr><td><span class="rank">31</span></td><td>mhanational.org</td><td><span class="tag tag-org">公益组织</span></td><td>美国</td><td>1:37</td><td>2.74</td><td>52.4%</td><td>Mental Health America：免费在线心理筛查工具最大提供方（年千万次测试）</td></tr>
+<tr><td><span class="rank">32</span></td><td><b>mind.org.uk</b></td><td><span class="tag tag-org">公益组织</span></td><td>英国</td><td>3:00</td><td>2.59</td><td>49.4%</td><td>英国最大心理健康公益组织，权威科普+求助指南+政策倡导，月访问约130万</td></tr>
+<tr><td><span class="rank">33</span></td><td>sessionshealth.com</td><td><span class="tag tag-saas">EHR</span></td><td>美国</td><td>7:45</td><td>8.82</td><td>31.5%</td><td>轻量级咨询师 EHR，以简洁与低价切入个人执业者市场</td></tr>
+<tr><td><span class="rank">34</span></td><td>therapyappointment.com</td><td><span class="tag tag-saas">执业SaaS</span></td><td>美国</td><td>8:04</td><td>7.06</td><td>26.7%</td><td>老牌预约+计费+保险申报软件</td></tr>
+<tr><td><span class="rank">35</span></td><td>embrace-autism.com</td><td><span class="tag tag-tool">测评科普</span></td><td>加拿大</td><td>3:36</td><td>3.81</td><td>39.2%</td><td>成人自闭症自评测验库+科普，「专业量表在线化」小团队跑出大流量的典型</td></tr>
+<tr><td><span class="rank">36</span></td><td>charliehealth.com</td><td><span class="tag tag-therapy">青少年IOP</span></td><td>美国</td><td>3:02</td><td>6.10</td><td>42.1%</td><td>青少年高强度线上团体治疗（虚拟 IOP），细分年龄段+高强度干预</td></tr>
+<tr><td><span class="rank">37</span></td><td>novopsych.com</td><td><span class="tag tag-tool">量表工具</span></td><td>澳大利亚</td><td>3:23</td><td>3.57</td><td>33.2%</td><td>面向执业者的标准化心理量表施测/计分 SaaS，「专业测评数字化」代表</td></tr>
+<tr><td><span class="rank">38</span></td><td>crediblebh.com</td><td><span class="tag tag-saas">机构EHR</span></td><td>美国</td><td>13:37</td><td>9.25</td><td>19.9%</td><td>大型行为健康机构 EHR（Qualifacts 旗下），社区精神卫生中心主力系统</td></tr>
+<tr><td><span class="rank">39</span></td><td>attachmentproject.com</td><td><span class="tag tag-media">主题科普</span></td><td>美国</td><td>3:30</td><td>4.08</td><td>48.6%</td><td>依恋理论主题站：免费依恋类型测试引流 → 付费课程转化，单一理论 IP 化运营</td></tr>
+<tr><td><span class="rank">40</span></td><td><b>therapistaid.com</b></td><td><span class="tag tag-tool">治疗素材</span></td><td>美国</td><td>2:15</td><td>4.58</td><td>36.9%</td><td>咨询师治疗工作表/心理教育素材库（免费+订阅），全球咨询师高频引用</td></tr>
+<tr><td><span class="rank">41</span></td><td>helpguide.org</td><td><span class="tag tag-org">公益科普</span></td><td>美国</td><td>0:48</td><td>1.63</td><td>62.7%</td><td>非营利心理自助指南（与哈佛健康合作），无广告、公益属性强</td></tr>
+<tr><td><span class="rank">42</span></td><td>sondermind.com</td><td><span class="tag tag-therapy">保险撮合</span></td><td>美国</td><td>6:06</td><td>6.24</td><td>27.9%</td><td>保险内治疗匹配+测量导向治疗（MBC），强调疗效数据</td></tr>
+<tr><td><span class="rank">43</span></td><td><b>psychcentral.com</b></td><td><span class="tag tag-media">科普媒体</span></td><td>美国</td><td>1:36</td><td>3.30</td><td>37.5%</td><td>老牌心理科普站（1995年创办，现属 Healthline Media），月访问约140万，测验+科普双轮</td></tr>
+<tr><td><span class="rank">44</span></td><td>988lifeline.org</td><td><span class="tag tag-org">危机热线</span></td><td>美国</td><td>1:30</td><td>2.23</td><td>57.5%</td><td>美国全国自杀与危机干预热线（988）官网，公共卫生基础设施</td></tr>
+<tr><td><span class="rank">45</span></td><td><b>psychiatry.org</b></td><td><span class="tag tag-org">专业协会</span></td><td>美国</td><td>1:04</td><td>2.06</td><td>59.5%</td><td>美国精神医学学会（APA-Psychiatric）：DSM-5 出版方，诊断标准权威源头</td></tr>
+<tr><td><span class="rank">46</span></td><td>samhsa.gov</td><td><span class="tag tag-org">政府机构</span></td><td>美国</td><td>1:37</td><td>2.69</td><td>56.7%</td><td>美国药物滥用与心理健康服务管理局，治疗机构查询器+权威统计数据源</td></tr>
+<tr><td><span class="rank">47</span></td><td>insighttimer.com</td><td><span class="tag tag-app">冥想应用</span></td><td>美国/澳</td><td>1:05</td><td>2.18</td><td>52.0%</td><td>最大免费冥想库（15万+免费音频），Freemium+打赏模式区别于 Calm/Headspace</td></tr>
+<tr><td><span class="rank">48</span></td><td>psychiatryonline.org</td><td><span class="tag tag-edu">学术出版</span></td><td>美国</td><td>1:18</td><td>3.21</td><td>37.0%</td><td>APA Publishing 学术平台：DSM 图书馆+《美国精神医学杂志》，机构订阅制</td></tr>
+<tr><td><span class="rank">49</span></td><td>findahelpline.com</td><td><span class="tag tag-org">求助聚合</span></td><td>新西兰</td><td>0:53</td><td>2.82</td><td>51.7%</td><td>全球危机热线聚合器（130+国家），已是「求助资源聚合」的雏形，被 Google 引用</td></tr>
+<tr><td><span class="rank">50</span></td><td>gottman.com</td><td><span class="tag tag-edu">流派IP</span></td><td>美国</td><td>1:54</td><td>2.48</td><td>49.2%</td><td>Gottman Institute：婚姻家庭治疗研究机构，课程认证+工作坊+图书，「学派 IP 商业化」标杆</td></tr>
+</table>
+</div>
+<div class="callout warn"><b>口径提示：</b>第11位 trendyol-milla.com 为类目错归的电商站（噪声数据）；同时 Similarweb 该类目不含被归入其他类目的心理学核心站点（如 APA 官网 apa.org 归入「科学」、16personalities.com 归入「人力资源」、simplypsychology.org 归入「教育」）。为保证「心理学专业领域」完整性，下一章将这些站点纳入分类分析。</div>
+
+<h2 id="s4">四、分类深度分析（六大赛道）</h2>
+
+<div class="card">
+<h3>4.1 内容媒体 / 科普赛道 —— 流量入口之王</h3>
+<div class="table-wrap"><table>
+<tr><th>网站</th><th>月访问量</th><th>核心打法</th><th>变现</th></tr>
+<tr><td>Psychology Today</td><td>约 2330 万（Similarweb）</td><td>专家博客(数千名执业者供稿) + 主题百科 + 咨询师目录</td><td>咨询师目录会员费（$29.95/月）+ 广告 + 杂志</td></tr>
+<tr><td>Verywell Mind</td><td>约 600-700 万（搜索流量，Ahrefs）</td><td>SEO 长文工厂 + 医学审核委员会背书</td><td>程序化广告 + 联盟营销（BetterHelp 转介）</td></tr>
+<tr><td>Simply Psychology</td><td>约 180-300 万</td><td>面向学生的理论词条（学术引用超 2.6 万次）</td><td>广告；已成为心理学专业学生第一站</td></tr>
+<tr><td>Psych Central</td><td>约 140 万</td><td>科普 + 免费自测（Healthline Media 收购后 SEO 复用）</td><td>广告 + 导流</td></tr>
+<tr><td>PositivePsychology.com</td><td>约 100 万+</td><td>积极心理学工具包/练习模板，面向从业者</td><td>付费工具包订阅（B2B2C）</td></tr>
+<tr><td>ADDitude / Embrace Autism / Attachment Project</td><td>50-140 万</td><td>单一主题（ADHD/自闭症/依恋）垂直深耕</td><td>课程、测评、讲座</td></tr>
+</table></div>
+<p><b>赛道洞察：</b>①内容站高度依赖 Google SEO，跳出率普遍 55-65%，用户「查完即走」、缺乏留存抓手；②垂直单病种站证明小切口也能做出百万级流量；③几乎所有内容站都靠「测试/测评」拉动互动与转化——<b>测评是心理学内容的最强钩子</b>。</p>
+</div>
+
+<div class="card">
+<h3>4.2 在线咨询 / 治疗平台 —— 商业化最重的赛道</h3>
+<ul class="tight">
+<li><b>DTC 订阅制</b>：BetterHelp（月访问约520万，年营收超10亿美元）、Talkspace——广告获客成本高企，口碑争议大；</li>
+<li><b>保险撮合制（当前最热）</b>：Headway、Grow Therapy、Rula、Alma、SonderMind——解决「用保险看心理咨询」的报销难题，B 端抽成，5 家同时进入 TOP50 说明模式已被验证；</li>
+<li><b>专病专科</b>：NOCD（强迫症）、Charlie Health（青少年）、Talkiatry（精神科处方）——细分即壁垒；</li>
+<li><b>免费互助</b>：7 Cups——志愿倾听者社区，189 国多语言，证明「同伴支持」的全球需求。</li>
+</ul>
+<p><b>赛道洞察：</b>该赛道重运营、重合规（HIPAA/保险牌照），不适合聚合平台直接进入，但聚合平台可以做它们的<b>「评测比价与导流层」</b>（类似心理服务界的携程）。</p>
+</div>
+
+<div class="card">
+<h3>4.3 执业者 SaaS / EHR —— 粘性最高的隐形冠军</h3>
+<p>SimplePractice（970万/月）、TherapyNotes（停留16分43秒、17页/访、跳出率9.8%）、TheraNest、Sessions Health、Zanda、Halaxy、Credible 等 13 个站入榜。它们的用户是<b>咨询师本人</b>，产品即工作台，日活型使用带来惊人粘性。</p>
+<p><b>赛道洞察：</b>心理从业者是价值密度最高的用户群——他们同时需要工具、继续教育、量表素材、转介渠道。聚合平台若能成为<b>从业者的「资源导航 + 选型指南」</b>，即可切入这一高价值人群。</p>
+</div>
+
+<div class="card">
+<h3>4.4 协会 / 政府 / 公益组织 —— 权威与标准的源头</h3>
+<div class="table-wrap"><table>
+<tr><th>网站</th><th>性质</th><th>不可替代价值</th></tr>
+<tr><td>apa.org（美国心理学会）</td><td>协会</td><td>月访问约 837 万（Muck Rack/Similarweb），APA 格式规范、期刊数据库 PsycINFO、执业伦理标准</td></tr>
+<tr><td>psychiatry.org（美国精神医学学会）</td><td>协会</td><td>DSM-5-TR 诊断标准出版方</td></tr>
+<tr><td>bps.org.uk（英国心理学会）</td><td>协会</td><td>英国注册心理学家标准、Research Digest 科普</td></tr>
+<tr><td>nimh.nih.gov / samhsa.gov</td><td>政府</td><td>研究经费与流行病学统计权威数据源（nih.gov 全域月访问1.68亿）</td></tr>
+<tr><td>MHA / Mind UK / HelpGuide</td><td>公益</td><td>免费筛查、求助指南、政策倡导</td></tr>
+<tr><td>988lifeline / findahelpline</td><td>危机干预</td><td>后者已是 130+ 国热线聚合器，Google 危机搜索直接引用</td></tr>
+</table></div>
+<p><b>赛道洞察：</b>权威机构内容公开可引，是聚合平台建立可信度的基石；findahelpline.com 证明「聚合权威资源」本身就能进全球 TOP50。</p>
+</div>
+
+<div class="card">
+<h3>4.5 测评 / 专业工具 —— 被低估的超级流量池</h3>
+<ul class="tight">
+<li><b>16personalities.com</b>：月访问 <b>1888 万</b>（Semrush，全球排名约 2892），免费 MBTI 风格测试，81,389 个自然关键词，「personality test」全球第一，流量价值约 700 万美元/月——单一免费测试即可比肩 Psychology Today；</li>
+<li><b>Truity / MyPersonality / CrystalKnows</b>：测评矩阵型公司，付费报告变现；</li>
+<li><b>NovoPsych</b>：面向咨询师的标准化量表施测 SaaS（PHQ-9、GAD-7 等自动计分）；</li>
+<li><b>Therapist Aid</b>：治疗工作表素材库，全球咨询师日常引用；</li>
+<li><b>MHA 在线筛查</b>：年千万次公益筛查。</li>
+</ul>
+<p><b>赛道洞察：</b>测评是心理学领域<b>获客成本最低、传播性最强</b>的产品形态（社交分享属性）；专业量表的合规在线化（施测-计分-解读）在中文市场几乎空白。</p>
+</div>
+
+<div class="card">
+<h3>4.6 学术 / 教育出版 —— 专业深水区</h3>
+<ul class="tight">
+<li><b>psychiatryonline.org</b>：DSM 电子图书馆 + 顶刊，机构订阅制；</li>
+<li><b>frontiersin.org（Frontiers in Psychology）</b>：全球发文量最大的心理学开放获取期刊；</li>
+<li><b>Gottman Institute</b>：研究机构 IP 化——认证培训 + 工作坊 + 图书 + 测评，单一学派年营收数千万美元；</li>
+<li><b>SimplyPsychology / 各大学 .edu 心理系</b>：教学内容长尾流量。</li>
+</ul>
+<p><b>赛道洞察：</b>「学术 → 应用」的翻译层严重缺失：研究者论文没人看得懂，大众科普又不够严谨。聚合平台可做<b>研究速递 + 循证解读</b>填补断层。</p>
+</div>
+
+<h2 id="s5">五、流量与用户行为洞察</h2>
+<div class="card">
+<h3>5.1 头部站点月访问量对比（多源数据，单位：万次/月）</h3>
+<div class="bar-row"><div class="bar-label">Psychology Today</div><div class="bar-track"><div class="bar-fill" style="width:100%">2330</div></div></div>
+<div class="bar-row"><div class="bar-label">16Personalities</div><div class="bar-track"><div class="bar-fill c2" style="width:81%">1888</div></div></div>
+<div class="bar-row"><div class="bar-label">SimplePractice</div><div class="bar-track"><div class="bar-fill c3" style="width:42%">970</div></div></div>
+<div class="bar-row"><div class="bar-label">APA (apa.org)</div><div class="bar-track"><div class="bar-fill c4" style="width:36%">837</div></div></div>
+<div class="bar-row"><div class="bar-label">BetterHelp</div><div class="bar-track"><div class="bar-fill" style="width:30%">700</div></div></div>
+<div class="bar-row"><div class="bar-label">Verywell Mind</div><div class="bar-track"><div class="bar-fill c2" style="width:28%">650</div></div></div>
+<div class="bar-row"><div class="bar-label">Headway</div><div class="bar-track"><div class="bar-fill c3" style="width:23%">530</div></div></div>
+<div class="bar-row"><div class="bar-label">Simply Psychology</div><div class="bar-track"><div class="bar-fill c4" style="width:13%">180-300</div></div></div>
+<div class="bar-row"><div class="bar-label">Psych Central</div><div class="bar-track"><div class="bar-fill" style="width:8%">140</div></div></div>
+<div class="bar-row"><div class="bar-label">Mind UK</div><div class="bar-track"><div class="bar-fill c2" style="width:7%">130</div></div></div>
+<p style="color:var(--muted);font-size:12.5px;margin-top:8px">注：数据分别来自 Similarweb（2025.10-2026.5）、Semrush（2025.10）、Ahrefs（2025.10），口径略有差异，用于量级对比。</p>
+</div>
+<div class="card">
+<h3>5.2 四条行为规律</h3>
+<ul class="tight">
+<li><b>内容站「高跳出、浅阅读」</b>：Verywell Mind 跳出率 64.7%、人均 1.75 页——SEO 流量巨大但没有留存，缺少账号体系与个性化；</li>
+<li><b>工具站「低跳出、深使用」</b>：TherapyNotes 人均 17 页、停留近 17 分钟——工作流绑定才有真粘性；</li>
+<li><b>测评「一次爆款吃十年」</b>：16Personalities 靠一个免费测试 + 16 种人格详解页持续霸榜「personality test」类关键词；</li>
+<li><b>目录「供需双边收费」</b>：Psychology Today 的目录既向用户免费提供检索，又向 50 万+ 咨询师收会员费，双边网络效应是其 60 年不倒的护城河。</li>
+</ul>
+</div>
+
+<h2 id="s6">六、商业模式对比</h2>
+<div class="card">
+<div class="table-wrap"><table>
+<tr><th>模式</th><th>代表</th><th>收入来源</th><th>优点</th><th>风险</th></tr>
+<tr><td>目录会员费</td><td>Psychology Today</td><td>咨询师 $29.95/月 × 50万+</td><td>双边网络效应、现金流稳定</td><td>被保险撮合平台分流</td></tr>
+<tr><td>广告+联盟</td><td>Verywell Mind、Psych Central</td><td>程序化广告、BetterHelp 转介佣金</td><td>启动快</td><td>依赖 Google 算法，AI 搜索冲击大</td></tr>
+<tr><td>DTC 订阅</td><td>BetterHelp、Calm、Headspace</td><td>用户周付/年付</td><td>规模化快</td><td>获客成本高、续费率承压</td></tr>
+<tr><td>保险抽成</td><td>Headway、Grow、Rula</td><td>按会谈次数向保险结算抽成</td><td>需求刚性、客单高</td><td>强合规、区域性强</td></tr>
+<tr><td>执业 SaaS</td><td>SimplePractice、TherapyNotes</td><td>咨询师 $49-99/月</td><td>粘性极高、流失极低</td><td>市场渐饱和</td></tr>
+<tr><td>专业内容付费</td><td>PositivePsychology、Therapist Aid、Gottman</td><td>工具包订阅、认证课程</td><td>毛利高、人群精准</td><td>天花板较低</td></tr>
+<tr><td>免费测评引流</td><td>16Personalities、Truity</td><td>付费完整报告、企业版</td><td>获客成本趋近于零</td><td>科学性易受质疑</td></tr>
+</table></div>
+</div>
+
+<h2 id="s7">七、对聚合平台的启示（SWOT 与机会点）</h2>
+<div class="card">
+<h3>7.1 市场空白判断</h3>
+<div class="callout good"><b>核心结论：</b>全球 TOP50 中没有一个「心理学专业领域聚合平台」。最接近的三个物种是：Psychology Today（内容+目录，但只覆盖北美咨询场景）、findahelpline.com（只聚合危机热线）、PositivePsychology.com（只聚合积极心理学工具）。<b>「一站式聚合：资讯 + 知识库 + 测评 + 工具导航 + 服务转介 + 从业者资源」的定位在全球与中文市场均属空白。</b></div>
+<h3>7.2 聚合平台 SWOT</h3>
+<div class="swot">
+<div class="cell s"><h4>S 优势</h4>聚合定位天然覆盖六大赛道流量入口；无需承担治疗合规重资产；中文市场几乎无竞品；可借鉴 50 个已验证的功能模块。</div>
+<div class="cell w"><h4>W 劣势</h4>冷启动内容量要求大；权威性需长期积累；「聚合」若无深加工易沦为链接农场；心理内容需专业审核团队。</div>
+<div class="cell o"><h4>O 机会</h4>AI 搜索冲击传统 SEO 媒体（Verywell 类），结构化聚合数据反而更被 AI 引用；测评钩子获客成本低；从业者工具选型/继续教育在中文区无人服务；出海咨询师、留学生心理服务需求增长。</div>
+<div class="cell t"><h4>T 威胁</h4>Google/AI 直接回答蚕食信息类流量；头部站点自建聚合功能；医疗类内容监管（广告法、互联网诊疗规范）；版权与量表授权风险。</div>
+</div>
+</div>
+<div class="card">
+<h3>7.3 六个可复制的成功范式 → 聚合平台功能映射</h3>
+<div class="table-wrap"><table>
+<tr><th>范式来源</th><th>被验证的机制</th><th>聚合平台落地</th></tr>
+<tr><td>Psychology Today</td><td>内容引流 → 目录变现</td><td>心理服务/咨询师/机构导航目录（先收录后认证）</td></tr>
+<tr><td>16Personalities</td><td>免费测评 = 零成本获客+社交裂变</td><td>科学量表自测中心（PHQ-9/GAD-7/大五人格等公开量表）</td></tr>
+<tr><td>findahelpline</td><td>纯聚合也能进 TOP50</td><td>全球求助资源库（热线/公益/低价咨询）按国家-语言检索</td></tr>
+<tr><td>Therapist Aid / NovoPsych</td><td>从业者素材与工具刚需</td><td>从业者专区：量表库、工作表、SaaS 选型评测、继续教育导航</td></tr>
+<tr><td>Simply Psychology</td><td>学生词条长尾 SEO</td><td>心理学理论/流派/人物结构化知识库（利于 AI 引用）</td></tr>
+<tr><td>ADDitude / NOCD</td><td>单病种垂直深耕</td><td>按主题建子频道：ADHD、自闭症、抑郁、焦虑、亲密关系……</td></tr>
+</table></div>
+</div>
+
+<h2 id="s8">八、建设建议与功能蓝图</h2>
+<div class="card">
+<h3>8.1 平台定位建议</h3>
+<p><b>「全球心理学资源的中文入口 + 专业分层的聚合导航」</b>：对大众是「可信的心理科普与自助入口」，对学生是「心理学学习资料库」，对从业者是「工具、量表与行业情报台」。</p>
+<h3>8.2 三期路线图</h3>
+<div class="table-wrap"><table>
+<tr><th>阶段</th><th>目标</th><th>核心模块</th><th>对标</th></tr>
+<tr><td><b>一期：导航+聚合</b></td><td>成为「找心理资源」第一站</td><td>全球 TOP 网站分类导航（本报告即首批数据）、每日心理学资讯聚合、求助热线库</td><td>findahelpline</td></tr>
+<tr><td><b>二期：内容+测评</b></td><td>建立自有流量池</td><td>结构化知识库（理论/量表/流派词条）、公开量表自测中心、研究速递（顶刊摘要中文化）</td><td>SimplyPsychology + 16Personalities</td></tr>
+<tr><td><b>三期：社区+服务</b></td><td>双边网络变现</td><td>咨询师/机构目录、从业者专区（素材+选型+课程导航）、企业心理健康服务对接</td><td>Psychology Today</td></tr>
+</table></div>
+<h3>8.3 关键风控提示</h3>
+<ul class="tight">
+<li>所有科普内容加「非医疗建议」免责声明，危机内容页置顶求助热线（对标 988lifeline 规范）；</li>
+<li>量表使用公开版权量表（PHQ-9、GAD-7 等免费授权），商业量表（MBTI 正版、SCL-90 修订版）需取得授权；</li>
+<li>内容建立专业审核流程（对标 Verywell 的 Medical Review Board），这是与自媒体拉开差距的核心；</li>
+<li>聚合外链遵守 robots 协议与版权规范，摘要+溯源链接而非全文转载。</li>
+</ul>
+</div>
+
+<div class="foot">
+<p><b>数据来源：</b>Similarweb Top Websites – Health &gt; Mental Health（2026年5月榜单）；Exploding Topics / Semrush Traffic Analytics（2026年4-5月全球心理健康站点流量）；Ahrefs（psychologytoday.com、simplypsychology.org 搜索流量，2025年10月-2026年2月）；Semrush（16personalities.com，2025年10月）；Muck Rack 美国科学媒体榜（APA、Psychology Today）；各网站官方 About 页面。不同数据商统计口径存在差异，本报告仅用于量级判断与战略参考。</p>
+<p style="margin-top:8px">报告生成：WorkBuddy · 2026年7月24日 · 供「心理学垂直网站项目」立项调研使用</p>
+</div>
+
+</div>
+</body>
+</html>

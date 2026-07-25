@@ -1,0 +1,74 @@
+# 心理学聚合平台 · 容器编排（前后端分离 + 反向代理）
+# 一键启动：docker compose up -d  → 访问 http://localhost
+services:
+  db:
+    image: postgres:16-alpine
+    container_name: psych-hub-db
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: ${POSTGRES_USER:-psych}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-psych_pass}
+      POSTGRES_DB: ${POSTGRES_DB:-psychhub}
+    ports:
+      - "5432:5432"
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER:-psych}"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  backend:
+    build:
+      context: ./backend
+    container_name: psych-hub-backend
+    restart: unless-stopped
+    depends_on:
+      db:
+        condition: service_healthy
+    environment:
+      DATABASE_URL: postgresql://${POSTGRES_USER:-psych}:${POSTGRES_PASSWORD:-psych_pass}@db:5432/${POSTGRES_DB:-psychhub}?schema=public
+      PORT: 3001
+      JWT_SECRET: ${JWT_SECRET:-change-me-in-production}
+    expose:
+      - "3001"
+    healthcheck:
+      test: ["CMD-SHELL", "wget -qO- http://localhost:3001/api/health >/dev/null 2>&1 || exit 1"]
+      interval: 15s
+      timeout: 5s
+      retries: 5
+
+  web:
+    build:
+      context: ./web
+      args:
+        NEXT_PUBLIC_API_BASE: http://backend:3001
+    container_name: psych-hub-web
+    restart: unless-stopped
+    depends_on:
+      - backend
+    environment:
+      NEXT_PUBLIC_API_BASE: http://backend:3001
+    expose:
+      - "3000"
+
+  nginx:
+    image: nginx:1.27-alpine
+    container_name: psych-hub-nginx
+    restart: unless-stopped
+    depends_on:
+      - web
+      - backend
+    ports:
+      - "80:80"
+    volumes:
+      - ./nginx/default.conf:/etc/nginx/conf.d/default.conf:ro
+    healthcheck:
+      test: ["CMD-SHELL", "wget -qO- http://localhost/ >/dev/null 2>&1 || exit 1"]
+      interval: 15s
+      timeout: 5s
+      retries: 5
+
+volumes:
+  pgdata:

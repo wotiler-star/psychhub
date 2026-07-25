@@ -1,0 +1,516 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>心理学聚合平台 · 网站建设说明书（PRD）</title>
+<style>
+:root{--primary:#4f46e5;--primary-light:#eef2ff;--accent:#0ea5e9;--text:#1e293b;--muted:#64748b;--bg:#f8fafc;--card:#ffffff;--border:#e2e8f0;--green:#059669;--orange:#d97706;--red:#dc2626;--purple:#7c3aed;}
+*{margin:0;padding:0;box-sizing:border-box;}
+body{font-family:"Microsoft YaHei","PingFang SC",-apple-system,sans-serif;color:var(--text);background:var(--bg);line-height:1.75;font-size:15px;}
+.container{max-width:1140px;margin:0 auto;padding:0 24px 90px;}
+header.hero{background:linear-gradient(135deg,#4f46e5 0%,#7c3aed 55%,#0ea5e9 100%);color:#fff;padding:60px 24px 52px;text-align:center;}
+header.hero h1{font-size:32px;letter-spacing:1px;margin-bottom:12px;}
+header.hero p{opacity:.92;max-width:780px;margin:0 auto;font-size:14.5px;}
+.meta-chips{margin-top:20px;display:flex;gap:12px;justify-content:center;flex-wrap:wrap;}
+.chip{background:rgba(255,255,255,.16);border:1px solid rgba(255,255,255,.35);border-radius:999px;padding:5px 16px;font-size:13px;}
+h2{font-size:23px;margin:54px 0 8px;color:var(--primary);border-left:5px solid var(--primary);padding-left:14px;}
+h3{font-size:18px;margin:28px 0 12px;color:var(--text);}
+h4{font-size:15px;margin:16px 0 6px;color:var(--primary);}
+p.section-desc{color:var(--muted);margin-bottom:18px;}
+.card{background:var(--card);border:1px solid var(--border);border-radius:12px;padding:22px 26px;margin:16px 0;box-shadow:0 1px 3px rgba(15,23,42,.05);}
+.grid{display:grid;gap:16px;}
+.grid-4{grid-template-columns:repeat(4,1fr);}
+.grid-3{grid-template-columns:repeat(3,1fr);}
+.grid-2{grid-template-columns:repeat(2,1fr);}
+@media(max-width:860px){.grid-4,.grid-3,.grid-2{grid-template-columns:1fr 1fr;}}
+@media(max-width:560px){.grid-4,.grid-3,.grid-2{grid-template-columns:1fr;}}
+.stat{background:var(--card);border:1px solid var(--border);border-radius:12px;padding:18px;text-align:center;}
+.stat .num{font-size:26px;font-weight:700;color:var(--primary);}
+.stat .lbl{font-size:12.5px;color:var(--muted);margin-top:4px;}
+table{width:100%;border-collapse:collapse;background:#fff;font-size:13.5px;margin:12px 0;}
+th{background:var(--primary);color:#fff;padding:10px 8px;text-align:left;font-weight:600;white-space:nowrap;}
+td{padding:9px 8px;border-bottom:1px solid var(--border);vertical-align:top;}
+tr:nth-child(even) td{background:#f8faff;}
+tr:hover td{background:var(--primary-light);}
+.table-wrap{overflow-x:auto;border-radius:10px;border:1px solid var(--border);}
+.tag{display:inline-block;border-radius:6px;padding:1px 8px;font-size:12px;font-weight:600;white-space:nowrap;}
+.tag-p0{background:#fef2f2;color:#dc2626;}
+.tag-p1{background:#fffbeb;color:#d97706;}
+.tag-p2{background:#f0f9ff;color:#0284c7;}
+.tag-media{background:#eef2ff;color:#4f46e5;}
+.tag-saas{background:#ecfdf5;color:#059669;}
+.tag-therapy{background:#fdf2f8;color:#db2777;}
+.tag-org{background:#fff7ed;color:#d97706;}
+.tag-tool{background:#f0f9ff;color:#0284c7;}
+.tag-edu{background:#fefce8;color:#a16207;}
+.callout{border-left:4px solid var(--accent);background:#f0f9ff;border-radius:0 10px 10px 0;padding:16px 20px;margin:16px 0;font-size:14px;}
+.callout.warn{border-color:var(--orange);background:#fffbeb;}
+.callout.good{border-color:var(--green);background:#ecfdf5;}
+.callout b{color:var(--primary);}
+ul.tight{padding-left:22px;margin:8px 0;}
+ul.tight li{margin:6px 0;}
+.foot{color:var(--muted);font-size:12.5px;margin-top:40px;border-top:1px solid var(--border);padding-top:16px;}
+.toc{display:grid;grid-template-columns:repeat(2,1fr);gap:8px 24px;}
+.toc a{color:var(--primary);text-decoration:none;font-size:14px;padding:6px 10px;border-radius:8px;display:block;}
+.toc a:hover{background:var(--primary-light);}
+.persona{border:1px solid var(--border);border-radius:12px;padding:18px 20px;background:#fff;}
+.persona .role{font-weight:700;color:var(--primary);font-size:15px;}
+.persona .needs{font-size:13px;color:var(--muted);margin-top:6px;}
+.module{border:1px solid var(--border);border-radius:12px;padding:18px 22px;background:#fff;margin:14px 0;}
+.module .mhead{display:flex;align-items:center;gap:10px;flex-wrap:wrap;}
+.module .mname{font-weight:700;font-size:16px;}
+.module .pri{border-radius:6px;padding:2px 9px;font-size:12px;font-weight:700;}
+.pri0{background:#fef2f2;color:#dc2626;}
+.pri1{background:#fffbeb;color:#d97706;}
+.pri2{background:#f0f9ff;color:#0284c7;}
+.module .phase{font-size:12px;color:var(--muted);margin-left:auto;}
+.req{font-size:13.5px;margin:6px 0;padding-left:18px;position:relative;}
+.req:before{content:"•";color:var(--primary);position:absolute;left:4px;font-weight:700;}
+code{background:#eef2ff;color:#4338ca;padding:1px 6px;border-radius:5px;font-size:13px;}
+.timeline{display:grid;grid-template-columns:repeat(3,1fr);gap:14px;margin:14px 0;}
+.tl{background:#fff;border:1px solid var(--border);border-radius:12px;padding:16px 18px;}
+.tl .ph{font-weight:700;color:var(--primary);}
+.tl .tt{font-size:12.5px;color:var(--muted);margin:4px 0 8px;}
+.tl ul{font-size:13px;padding-left:18px;}
+@media(max-width:760px){.timeline{grid-template-columns:1fr;}}
+</style>
+</head>
+<body>
+<header class="hero">
+<h1>心理学聚合平台 · 网站建设说明书（PRD）</h1>
+<p>面向「全球心理学专业领域聚合平台」的网站建设规格说明 —— 对标全球前 10 心理学网站，落地功能、架构、技术栈与三期路线</p>
+<div class="meta-chips">
+<span class="chip">文档版本：v1.0</span>
+<span class="chip">编制日期：2026年7月24日</span>
+<span class="chip">文档类型：产品 / 技术建设说明书</span>
+<span class="chip">依据：《全球心理学网站 TOP50 调研分析报告》</span>
+</div>
+</header>
+<div class="container">
+
+<h2 id="toc">目录</h2>
+<div class="card toc">
+<a href="#s1">一、文档目的与范围</a>
+<a href="#s2">二、项目定位与产品目标</a>
+<a href="#s3">三、目标用户与核心需求</a>
+<a href="#s4">四、竞品对标：全球前 10 网站借鉴点</a>
+<a href="#s5">五、功能需求规格（模块清单）</a>
+<a href="#s6">六、信息架构与页面结构</a>
+<a href="#s7">七、内容策略</a>
+<a href="#s8">八、交互与视觉设计规范</a>
+<a href="#s9">九、技术架构建议</a>
+<a href="#s10">十、数据安全与合规风控</a>
+<a href="#s11">十一、运营与增长策略</a>
+<a href="#s12">十二、三期建设路线与里程碑</a>
+<a href="#s13">十三、风险与应对</a>
+<a href="#s14">十四、验收标准</a>
+</div>
+
+<!-- ============ 一 ============ -->
+<h2 id="s1">一、文档目的与范围</h2>
+<div class="card">
+<h3>1.1 目的</h3>
+<p>本说明书是「心理学垂直网站项目」的<b>建设执行蓝图</b>。它把《全球心理学网站 TOP50 调研分析报告》中的市场结论，转化为可落地的产品功能、信息架构、技术选型与开发排期，供产品、设计、研发、运营团队对齐共识。</p>
+<h3>1.2 范围</h3>
+<ul class="tight">
+<li><b>包含</b>：网站（Web 端）的产品定义、功能需求、信息架构、设计语言、技术架构、内容策略、合规要求、建设排期。</li>
+<li><b>暂不含</b>（后续版本补充）：原生 App（iOS/Android）、自有在线问诊/咨询业务、AI 心理干预等需牌照的重资产模块。本期定位为「聚合与导航」，不做直接诊疗服务。</li>
+</ul>
+<h3>1.3 关键结论（来自调研）</h3>
+<div class="grid grid-4">
+<div class="stat"><div class="num">0</div><div class="lbl">全球尚无真正心理学聚合平台（空白）</div></div>
+<div class="stat"><div class="num">6 大</div><div class="lbl">赛道：媒体/SaaS/咨询/机构/测评/冥想</div></div>
+<div class="stat"><div class="num">2330万</div><div class="lbl">头部 Psychology Today 月访问（标杆）</div></div>
+<div class="stat"><div class="num">1888万</div><div class="lbl">16Personalities 单测评引爆流量</div></div>
+</div>
+<div class="callout good"><b>核心机会：</b>「资讯 + 知识库 + 测评 + 工具导航 + 服务转介 + 从业者资源」的一站式中文聚合平台，在全球与中文市场均属空白；前 10 网站已验证六大功能范式，本平台可直接借鉴并组合。</div>
+<h3>1.4 建设原则（强制约束 · 最高优先级）</h3>
+<div class="callout warn"><b>以下原则为项目建设的刚性底线，任何技术方案与排期均不得违反：</b></div>
+<ul class="tight">
+<li><b>① 前后端必须分离开发</b>：前端（界面与交互）与后端（业务逻辑与数据）作为<b>两个独立工程、独立仓库、独立部署</b>。双方仅通过<b>标准化 API（RESTful / GraphQL + OpenAPI 契约）</b>通信；禁止服务端模板直出页面、禁止在视图层编写业务逻辑、禁止前后端代码耦合在同一工程。</li>
+<li><b>② 技术栈选型四原则——先进 · 合理 · 科学 · 实用</b>：
+  <ul class="tight">
+    <li><b>先进</b>：优先采用当前主流、活跃演进的现代技术（如 TypeScript 全栈、云原生、声明式 UI），不接受已被行业淘汰或停止维护的方案；</li>
+    <li><b>合理</b>：技术匹配业务规模与团队能力，不为「先进」而过度设计（如小流量阶段不盲目上重型微服务）；</li>
+    <li><b>科学</b>：遵循关注点分离、单一职责、可测试性等工程化基本原则，架构决策有依据、可解释；</li>
+    <li><b>实用</b>：以「可交付、可运维、可扩展」为终判标准，文档、测试、监控一并交付，不堆砌无法落地的概念。</li>
+  </ul>
+</li>
+<li><b>③ 工程化基线（默认要求）</b>：类型安全（TypeScript）、容器化（Docker）、自动化测试与 CI/CD、可观测性（日志 / 监控 / 告警）为必备项，不视为可选项。</li>
+</ul>
+</div>
+
+<!-- ============ 二 ============ -->
+<h2 id="s2">二、项目定位与产品目标</h2>
+<div class="card">
+<h3>2.1 一句话定位</h3>
+<p><b>「全球心理学资源的中文入口 + 专业分层的聚合导航平台」</b>——对大众是可信的心理科普与自助入口，对学生是心理学学习资料库，对从业者是工具、量表与行业情报台。</p>
+<h3>2.2 产品原则（区别于自媒体/链接农场）</h3>
+<ul class="tight">
+<li><b>可信优先</b>：所有内容带专业审核标识与溯源，对标 Verywell 的 Medical Review Board。</li>
+<li><b>结构化优先</b>：知识以词条/图谱形式结构化存储，利于用户检索与 AI 引用（抗 SEO 冲击）。</li>
+<li><b>聚合 + 深加工</b>：不做全文转载，做「摘要 + 溯源链接 + 中文化解读」，沉淀自有结构化资产。</li>
+<li><b>分层服务</b>：同一平台服务大众 / 学生 / 从业者三类人群，通过账号体系做个性化分发。</li>
+</ul>
+<h3>2.3 量化目标（上线 12 个月内）</h3>
+<div class="grid grid-4">
+<div class="stat"><div class="num">50万</div><div class="lbl">月独立访客（UV）目标</div></div>
+<div class="stat"><div class="num">100万</div><div class="lbl">心理测评累计完成量</div></div>
+<div class="stat"><div class="num">3000+</div><div class="lbl">收录全球心理网站/资源</div></div>
+<div class="stat"><div class="num">35%</div><div class="lbl">注册用户次月留存（目标）</div></div>
+</div>
+</div>
+
+<!-- ============ 三 ============ -->
+<h2 id="s3">三、目标用户与核心需求</h2>
+<div class="card">
+<p class="section-desc">三类核心人群，需求差异显著，需在同一个平台内分层满足。</p>
+<div class="grid grid-3">
+<div class="persona">
+<div class="role">① 大众用户（C 端自助）</div>
+<div class="needs">• 想了解心理知识、自测情绪状态<br>• 需要时找到可信的求助热线 / 咨询师<br>• 需求：易懂、可信、能马上行动<br><b>对标痛点</b>：Verywell 类跳出率 65%，查完即走</div>
+</div>
+<div class="persona">
+<div class="role">② 学生 / 研究者</div>
+<div class="needs">• 查理论、流派、人物、量表词条<br>• 需要论文 / 顶刊摘要中文化<br>• 需求：结构化、可引用、权威<br><b>对标</b>：SimplyPsychology 学生第一站</div>
+</div>
+<div class="persona">
+<div class="role">③ 心理从业者</div>
+<div class="needs">• 找量表、工作表、执业 SaaS 选型<br>• 继续教育、行业情报、转介渠道<br>• 需求：高频、专业、效率<br><b>对标</b>：Therapist Aid / NovoPsych 刚需</div>
+</div>
+</div>
+</div>
+
+<!-- ============ 四 ============ -->
+<h2 id="s4">四、竞品对标：全球前 10 网站借鉴点</h2>
+<div class="card">
+<p class="section-desc">以调研报告中按流量与影响力排序的「全球前 10 心理学网站」为对标基准（也是本项目功能范式的主要来源）。下表给出每个站点「值得借鉴的机制」与「聚合平台落地方式」。</p>
+<div class="table-wrap"><table>
+<tr><th>#</th><th>站点</th><th>类型</th><th>月访问</th><th>被验证的机制（借鉴点）</th><th>本平台落地方式</th></tr>
+<tr><td>1</td><td><b>Psychology Today</b></td><td><span class="tag tag-media">媒体+目录</span></td><td>2330万</td><td>内容引流 → 咨询师目录变现的双边网络；专家供稿体系</td><td>咨询师/机构目录模块（先收录后认证）；专家科普投稿</td></tr>
+<tr><td>2</td><td><b>16Personalities</b></td><td><span class="tag tag-tool">测评</span></td><td>1888万</td><td>免费测评 = 零成本获客 + 结果页深挖 + 社交裂变</td><td>公开量表自测中心（PHQ-9/GAD-7/大五人格）；结果分享卡</td></tr>
+<tr><td>3</td><td><b>SimplePractice</b></td><td><span class="tag tag-saas">执业SaaS</span></td><td>970万</td><td>工作台型产品黏性极高（人均10页）</td><td>从业者专区做「工具选型评测 + 工作流导航」，切入高价值人群</td></tr>
+<tr><td>4</td><td><b>APA (apa.org)</b></td><td><span class="tag tag-org">协会</span></td><td>837万</td><td>权威标准与期刊源头，天然可信背书</td><td>引用其开放内容建「标准与术语」权威库；建可信度基石</td></tr>
+<tr><td>5</td><td><b>BetterHelp</b></td><td><span class="tag tag-therapy">在线治疗</span></td><td>700万</td><td>DTC 订阅 + 导流分佣；重广告获客</td><td>聚合平台做「心理服务评测比价 + 转介层」（携程式），不自营治疗</td></tr>
+<tr><td>6</td><td><b>Verywell Mind</b></td><td><span class="tag tag-media">科普媒体</span></td><td>650万</td><td>SEO 长文 + 医学审核委员会；广告 + 联盟</td><td>借鉴「审核流程」与「长尾词条」打法，弥补其「无留存」短板（加账号）</td></tr>
+<tr><td>7</td><td><b>Headway</b></td><td><span class="tag tag-therapy">保险撮合</span></td><td>530万</td><td>「按保险找咨询师」评测/匹配思维</td><td>咨询师目录支持「标签化筛选」（擅长领域/语言/可约/价格）</td></tr>
+<tr><td>8</td><td><b>SimplyPsychology</b></td><td><span class="tag tag-edu">学生词条</span></td><td>180-300万</td><td>理论词条结构化、学术可引用</td><td>结构化心理学知识库（理论/流派/人物/量表），利于 AI 引用</td></tr>
+<tr><td>9</td><td><b>Psych Central</b></td><td><span class="tag tag-media">科普+自测</span></td><td>140万</td><td>科普 + 免费自测双轮驱动</td><td>内容页内嵌相关量表入口，形成「读 → 测 → 行动」闭环</td></tr>
+<tr><td>10</td><td><b>Mind UK</b></td><td><span class="tag tag-org">公益科普</span></td><td>130万</td><td>权威求助指南 + 危机干预规范</td><td>求助资源库 + 全站危机干预提示组件（对标 988 规范）</td></tr>
+</table></div>
+<div class="callout"><b>对标小结：</b>前 10 站点的「内容引流、测评获客、目录变现、权威背书、结构化知识、危机干预」六大机制，恰好拼成一张聚合平台的功能拼图。本项目不是复制某一家，而是把它们组合成「一站式中文入口」。</div>
+</div>
+
+<!-- ============ 五 ============ -->
+<h2 id="s5">五、功能需求规格（模块清单）</h2>
+<p class="section-desc">优先级：<span class="tag tag-p0">P0</span> 一期必做（MVP 核心）；<span class="tag tag-p1">P1</span> 二期增强；<span class="tag tag-p2">P2</span> 三期生态。</p>
+
+<!-- M0 -->
+<div class="module">
+<div class="mhead"><span class="mname">M0 全球心理学网站 / 资源导航目录</span><span class="pri pri0">P0</span><span class="phase">一期 · 对标 findahelpline + 本报告数据</span></div>
+<p style="font-size:13.5px;color:var(--muted)">把《TOP50 调研报告》的 50+ 站点作为首批种子数据，扩展为「全球心理学资源中文导航」。</p>
+<ul class="tight">
+<li class="req">资源分类：按调研六大赛道（媒体/执业SaaS/咨询/机构/测评/冥想）+ 主题标签多重归类</li>
+<li class="req">检索与筛选：支持关键词、国家/地区、类型、语言、是否免费筛选</li>
+<li class="req">资源详情页：简介 + 核心功能 + 流量量级 + 适合人群 + 直达外链（摘要+溯源，不全文转载）</li>
+<li class="req">收录机制：管理员后台录入 + 用户提交（需审核），支持「收录-认证」两级状态</li>
+<li class="req">数据看板：按赛道/国家统计收录量，支撑持续扩充</li>
+</ul>
+</div>
+
+<!-- M1 -->
+<div class="module">
+<div class="mhead"><span class="mname">M1 心理学资讯 / 研究速递聚合</span><span class="pri pri0">P0</span><span class="phase">一期 · 对标 APA / 顶刊</span></div>
+<ul class="tight">
+<li class="req">资讯流：聚合全球心理学新闻、研究进展、行业动态（RSS + 编辑精选）</li>
+<li class="req">研究速递：顶刊（如 Frontiers in Psychology）论文摘要中文化、加「通俗解读」标签</li>
+<li class="req">订阅推送：注册用户可按主题订阅（焦虑/抑郁/ADHD…）</li>
+</ul>
+</div>
+
+<!-- M2 -->
+<div class="module">
+<div class="mhead"><span class="mname">M2 结构化心理学知识库</span><span class="pri pri1">P1</span><span class="phase">二期 · 对标 SimplyPsychology</span></div>
+<ul class="tight">
+<li class="req">词条类型：理论、流派、代表人物、核心概念、心理量表，相互关联成知识图谱</li>
+<li class="req">词条规范：定义 + 起源 + 关键研究 + 应用 + 参考资料（可引用格式）</li>
+<li class="req">SEO/AI 友好：结构化数据（Schema.org），利于被搜索引擎与 AI 直接引用</li>
+<li class="req">编辑流程：投稿 → 专业审核 → 发布，带「已审校」标识</li>
+</ul>
+</div>
+
+<!-- M3 -->
+<div class="module">
+<div class="mhead"><span class="mname">M3 心理测评中心</span><span class="pri pri0">P0</span><span class="phase">一期起步 / 二期扩量 · 对标 16Personalities</span></div>
+<ul class="tight">
+<li class="req">首批量表：PHQ-9（抑郁）、GAD-7（焦虑）、大五人格、压力自评等<b>公开版权</b>量表</li>
+<li class="req">施测-计分-解读闭环：在线作答 → 自动计分 → 生成通俗结果报告</li>
+<li class="req">结果分享：生成可视化结果卡（社交裂变），但带「非诊断」声明</li>
+<li class="req">个人档案：登录用户保存历史测评，生成趋势曲线（留存钩子）</li>
+<li class="req">版权合规：商业量表（MBTI 正版、SCL-90 修订版）须取得授权后上线</li>
+</ul>
+</div>
+
+<!-- M4 -->
+<div class="module">
+<div class="mhead"><span class="mname">M4 求助资源库（热线 / 公益 / 低价咨询）</span><span class="pri pri0">P0</span><span class="phase">一期 · 对标 findahelpline + Mind UK</span></div>
+<ul class="tight">
+<li class="req">按国家/地区/语言检索危机热线、公益组织、低价咨询渠道</li>
+<li class="req">危机干预组件：全站高危内容页（如自杀、自伤）置顶 988 式求助提示</li>
+<li class="req">与 M0 目录打通，咨询师/机构也可在此被检索</li>
+</ul>
+</div>
+
+<!-- M5 -->
+<div class="module">
+<div class="mhead"><span class="mname">M5 咨询师 / 机构目录</span><span class="pri pri1">P1</span><span class="phase">三期 · 对标 Psychology Today + Headway</span></div>
+<ul class="tight">
+<li class="req">咨询师档案：擅长领域、流派、语言、可约时段、价格、认证状态</li>
+<li class="req">标签化筛选与匹配：用户输入需求 → 推荐匹配咨询师（携程式「评测比价」）</li>
+<li class="req">商业模式：目录会员 / 转介分佣（不自营诊疗，规避牌照风险）</li>
+</ul>
+</div>
+
+<!-- M6 -->
+<div class="module">
+<div class="mhead"><span class="mname">M6 从业者专区</span><span class="pri pri1">P1</span><span class="phase">二期/三期 · 对标 Therapist Aid + NovoPsych + SimplePractice</span></div>
+<ul class="tight">
+<li class="req">量表库 / 工作表下载：咨询师高频引用素材（免费+订阅）</li>
+<li class="req">执业 SaaS 选型评测：横向对比 SimplePractice / TherapyNotes 等，做「选型指南」</li>
+<li class="req">继续教育导航：课程、认证、会议资讯聚合</li>
+<li class="req">行业情报：政策、融资、产品动态简报</li>
+</ul>
+</div>
+
+<!-- M7 -->
+<div class="module">
+<div class="mhead"><span class="mname">M7 主题频道（单病种 / 场景深耕）</span><span class="pri pri2">P2</span><span class="phase">三期 · 对标 ADDitude / NOCD</span></div>
+<ul class="tight">
+<li class="req">子频道：ADHD、自闭症、抑郁、焦虑、亲密关系、睡眠、职场心理……</li>
+<li class="req">每个频道聚合「科普 + 量表 + 资源 + 社区」四维内容</li>
+<li class="req">借鉴「小切口百万流量」规律，做深做透垂直人群</li>
+</ul>
+</div>
+
+<!-- M8 -->
+<div class="module">
+<div class="mhead"><span class="mname">M8 社区 / 互助（UGC）</span><span class="pri pri2">P2</span><span class="phase">三期 · 对标 7 Cups</span></div>
+<ul class="tight">
+<li class="req">话题小组、经验分享、志愿倾听者机制</li>
+<li class="req">强内容审核与危机干预联动，防止伤害性内容</li>
+</ul>
+</div>
+
+<!-- M9 -->
+<div class="module">
+<div class="mhead"><span class="mname">M9 账号体系与个性化</span><span class="pri pri1">P1</span><span class="phase">二期 · 弥补 Verywell「无留存」短板</span></div>
+<ul class="tight">
+<li class="req">注册/登录（邮箱+第三方）、个人兴趣标签</li>
+<li class="req">个性化首页：按兴趣分发资讯、知识、测评</li>
+<li class="req">测评历史、收藏、订阅管理</li>
+<li class="req">这是把「高跳出内容站」变为「有留存平台」的关键差异化</li>
+</ul>
+</div>
+
+<!-- ============ 六 ============ -->
+<h2 id="s6">六、信息架构与页面结构</h2>
+<div class="card">
+<h3>6.1 站点地图（IA）</h3>
+<svg viewBox="0 0 680 360" xmlns="http://www.w3.org/2000/svg" style="width:100%;height:auto;background:#fff;border:1px solid #e2e8f0;border-radius:10px;">
+  <rect x="290" y="10" width="100" height="40" rx="8" fill="#4f46e5"/><text x="340" y="35" fill="#fff" font-size="14" text-anchor="middle" font-family="Microsoft YaHei">首页</text>
+  <!-- level 2 -->
+  <g font-size="12.5" font-family="Microsoft YaHei" text-anchor="middle">
+    <rect x="20" y="90" width="120" height="38" rx="7" fill="#eef2ff"/><text x="80" y="113" fill="#4f46e5">资源导航目录</text>
+    <rect x="160" y="90" width="120" height="38" rx="7" fill="#eef2ff"/><text x="220" y="113" fill="#4f46e5">资讯/研究速递</text>
+    <rect x="300" y="90" width="120" height="38" rx="7" fill="#eef2ff"/><text x="360" y="113" fill="#4f46e5">心理测评中心</text>
+    <rect x="440" y="90" width="120" height="38" rx="7" fill="#eef2ff"/><text x="500" y="113" fill="#4f46e5">求助资源库</text>
+    <rect x="580" y="90" width="90" height="38" rx="7" fill="#eef2ff"/><text x="625" y="113" fill="#4f46e5">知识库</text>
+  </g>
+  <!-- connectors -->
+  <g stroke="#cbd5e1" stroke-width="1.5">
+    <line x1="340" y1="50" x2="80" y2="90"/><line x1="340" y1="50" x2="220" y2="90"/><line x1="340" y1="50" x2="360" y2="90"/><line x1="340" y1="50" x2="500" y2="90"/><line x1="340" y1="50" x2="625" y2="90"/>
+  </g>
+  <!-- level 3 (P1/P2 under) -->
+  <g font-size="12" font-family="Microsoft YaHei" text-anchor="middle">
+    <rect x="20" y="180" width="120" height="34" rx="7" fill="#ecfdf5"/><text x="80" y="201" fill="#059669">咨询师/机构目录</text>
+    <rect x="160" y="180" width="120" height="34" rx="7" fill="#ecfdf5"/><text x="220" y="201" fill="#059669">从业者专区</text>
+    <rect x="300" y="180" width="120" height="34" rx="7" fill="#ecfdf5"/><text x="360" y="201" fill="#059669">账号/个性化</text>
+    <rect x="440" y="180" width="120" height="34" rx="7" fill="#ecfdf5"/><text x="500" y="201" fill="#059669">主题频道</text>
+    <rect x="580" y="180" width="90" height="34" rx="7" fill="#ecfdf5"/><text x="625" y="201" fill="#059669">社区互助</text>
+  </g>
+  <g stroke="#a7f3d0" stroke-width="1.5">
+    <line x1="80" y1="128" x2="80" y2="180"/><line x1="220" y1="128" x2="220" y2="180"/><line x1="360" y1="128" x2="360" y2="180"/><line x1="500" y1="128" x2="500" y2="180"/><line x1="625" y1="128" x2="625" y2="180"/>
+  </g>
+  <!-- bottom bar -->
+  <rect x="20" y="280" width="640" height="34" rx="8" fill="#fffbeb"/><text x="340" y="302" fill="#d97706" font-size="12.5" text-anchor="middle" font-family="Microsoft YaHei">全站基础设施：危机干预提示 · 专业审核流程 · 搜索/筛选 · 多端响应式</text>
+  <g stroke="#fcd34d" stroke-width="1.5"><line x1="340" y1="214" x2="340" y2="280"/></g>
+</svg>
+<h3>6.2 核心页面清单</h3>
+<div class="table-wrap"><table>
+<tr><th>页面</th><th>优先级</th><th>关键元素</th></tr>
+<tr><td>首页（聚合门户）</td><td><span class="tag tag-p0">P0</span></td><td>热门资源、今日资讯、热门测评、求助入口、搜索框</td></tr>
+<tr><td>资源导航列表 / 详情</td><td><span class="tag tag-p0">P0</span></td><td>分类筛选、资源卡片、外链溯源</td></tr>
+<tr><td>测评中心 / 量表作答 / 报告</td><td><span class="tag tag-p0">P0</span></td><td>量表列表、作答页、结果报告、分享卡</td></tr>
+<tr><td>求助资源库</td><td><span class="tag tag-p0">P0</span></td><td>国家/语言筛选、热线卡片、危机提示</td></tr>
+<tr><td>资讯 / 研究速递</td><td><span class="tag tag-p0">P0</span></td><td>信息流、订阅、中文化解读</td></tr>
+<tr><td>知识库词条</td><td><span class="tag tag-p1">P1</span></td><td>词条详情、知识图谱关联、引用</td></tr>
+<tr><td>咨询师 / 机构目录</td><td><span class="tag tag-p1">P1</span></td><td>档案、筛选匹配、转介</td></tr>
+<tr><td>从业者专区</td><td><span class="tag tag-p1">P1</span></td><td>量表库、SaaS 选型、继续教育</td></tr>
+<tr><td>账号中心</td><td><span class="tag tag-p1">P1</span></td><td>登录、兴趣、测评历史、收藏</td></tr>
+<tr><td>主题频道 / 社区</td><td><span class="tag tag-p2">P2</span></td><td>子频道聚合、UGC 小组</td></tr>
+</table></div>
+</div>
+
+<!-- ============ 七 ============ -->
+<h2 id="s7">七、内容策略</h2>
+<div class="card">
+<ul class="tight">
+<li><b>种子内容</b>：直接导入《TOP50 调研报告》的 50+ 站点作为资源目录首批数据；APA / Mind UK / SimplyPsychology 的开放内容做中文化摘要。</li>
+<li><b>原创中文化</b>：顶刊研究速递、理论词条、测评解读——强调「循证 + 易懂 + 带溯源」。</li>
+<li><b>专家供稿</b>：邀请持证心理咨询师/研究者供稿，对标 Psychology Today 专家博客模式。</li>
+<li><b>更新频率</b>：资讯每日更新；知识库词条每周 5-10 条；测评中心随授权扩充。</li>
+<li><b>结构化优先</b>：所有内容以可被 AI/搜索引用的结构化数据产出，对抗 AI 搜索对媒体的冲击。</li>
+</ul>
+</div>
+
+<!-- ============ 八 ============ -->
+<h2 id="s8">八、交互与视觉设计规范</h2>
+<div class="card">
+<h3>8.1 设计语言</h3>
+<ul class="tight">
+<li><b>调性</b>：专业、可信、温和（心理学场景需降低焦虑感）。主色沿用本说明书与调研报告的靛蓝 <code>#4f46e5</code>，辅以青色 <code>#0ea5e9</code>。</li>
+<li><b>字体</b>：中文「思源黑体 / 苹方」，正文 15px，行高 1.75，保证长文可读。</li>
+<li><b>留白</b>：内容站需大留白与清晰层级，避免信息过载（区别于链接农场观感）。</li>
+</ul>
+<h3>8.2 关键交互</h3>
+<ul class="tight">
+<li>全局搜索 + 多维筛选（资源/测评/求助通用组件）。</li>
+<li>测评作答分步进度条，结果页「生成分享卡」一键转发。</li>
+<li>危机干预组件：任何含自伤/自杀关键词的页面自动置顶求助条。</li>
+<li>全站响应式（移动端优先，测评与求助在移动端使用频次最高）。</li>
+</ul>
+</div>
+
+<!-- ============ 九 ============ -->
+<h2 id="s9">九、技术架构建议</h2>
+<div class="card">
+<h3>9.1 总体架构（强制前后端分离）</h3>
+<div class="callout warn"><b>架构红线：</b>前端工程与后端 API 服务<b>独立开发、独立仓库、独立部署</b>，二者仅通过标准化 HTTP API（RESTful + OpenAPI，或 GraphQL）通信。前端不直连数据库、不写业务规则；后端不负责页面渲染。采用 <b>API-First</b>：先用 OpenAPI/Swagger 定义接口契约，前后端并行开发。</div>
+<div class="table-wrap"><table>
+<tr><th>工程（独立）</th><th>推荐技术栈</th><th>职责与边界</th></tr>
+<tr><td><b>前端工程</b><br>（Web 客户端）</td><td>Next.js（React 18）+ TypeScript + Tailwind CSS + 组件库（shadcn/ui 或 Ant Design）</td><td>页面渲染（SSR/SSG 兼顾 SEO）、交互、状态管理；<b>仅消费后端 API</b>；独立仓库 / 独立 CI-CD / 独立部署（Edge 或 Node 运行时）；静态资源走 CDN</td></tr>
+<tr><td><b>后端工程</b><br>（API 服务）</td><td>Node.js（NestJS）或 Python（FastAPI），全量类型化</td><td>业务逻辑、数据持久化、鉴权、第三方集成；暴露 REST/GraphQL API + OpenAPI 文档；<b>与前端完全解耦、可独立水平扩展</b>；CMS 可选 Strapi / Directus</td></tr>
+<tr><td>数据层</td><td>PostgreSQL + Redis（缓存）；知识图谱 Neo4j（P2）</td><td>关系数据 + 缓存；图谱支撑知识库关联</td></tr>
+<tr><td>检索</td><td>Elasticsearch / Meilisearch</td><td>资源 / 测评 / 求助的多维检索与筛选</td></tr>
+<tr><td>部署 / 运维</td><td>Docker 容器化 + 云服务器 + CDN + 对象存储</td><td>前后端分别打包镜像，独立伸缩；前端静态资源 CDN 加速</td></tr>
+<tr><td>安全合规</td><td>HTTPS、WAF、日志审计、密钥管理（Vault/KMS）</td><td>数据安全与等保基础</td></tr>
+</table></div>
+<h4>9.1.1 两套参考技术栈（均满足「分离 + 先进/合理/科学/实用」，二选一）</h4>
+<div class="table-wrap"><table>
+<tr><th>维度</th><th>方案 A：TypeScript 全栈（团队单一语言）</th><th>方案 B：Python 数据/科学友好</th></tr>
+<tr><td>前端</td><td>Next.js + React + TypeScript + Tailwind</td><td>Next.js + React + TypeScript + Tailwind</td></tr>
+<tr><td>后端</td><td>NestJS（Node/TS）+ Prisma / TypeORM</td><td>FastAPI（Python）+ SQLAlchemy / Tortoise</td></tr>
+<tr><td>检索</td><td>Meilisearch（轻量、易运维）</td><td>Elasticsearch（全文能力强）</td></tr>
+<tr><td>适用</td><td>中小型团队、统一技术栈、迭代快</td><td>需强数据分析 / ML（测评计分、推荐）场景</td></tr>
+</table></div>
+<div class="callout"><b>选型判定：</b>若团队以 JavaScript/TypeScript 为主、追求统一与快速迭代 → 选方案 A；若后续要做测评智能计分、个性化推荐等数据/算法密集型能力 → 方案 B 的 Python 生态（scikit-learn、pandas）更实用。两套都满足前后端分离与四原则，最终以团队能力为准。</div>
+<h3>9.2 非功能性要求</h3>
+<ul class="tight">
+<li>首屏加载 &lt; 2s；Lighthouse SEO/可访问性评分 ≥ 90。</li>
+<li>结构化数据（Schema.org / JSON-LD）覆盖资源、词条、测评、FAQ。</li>
+<li>支持 i18n（中文为主，预留英文/多语言以承接全球资源）。</li>
+<li>后台 CMS 支持内容审核流（投稿→审校→发布）。</li>
+</ul>
+</div>
+
+<!-- ============ 十 ============ -->
+<h2 id="s10">十、数据安全与合规风控</h2>
+<div class="card">
+<div class="callout warn"><b>高优先级风控</b>：心理内容属敏感领域，合规是平台生死线，须在 MVP 阶段即内建。</div>
+<ul class="tight">
+<li><b>内容免责</b>：所有科普/测评页加「非医疗建议、不构成诊断」声明；测评结果须标注「仅供参考」。</li>
+<li><b>危机干预</b>：高危页面置顶求助热线，建立与 988 / 当地热线联动的应急机制。</li>
+<li><b>量表版权</b>：仅上线 PHQ-9、GAD-7 等公开授权量表；MBTI、SCL-90 等商业量表须取得正式授权。</li>
+<li><b>隐私保护</b>：测评/账户数据加密存储，明确告知用途，符合个人信息保护法；不向第三方出售数据。</li>
+<li><b>聚合外链</b>：遵守 robots 协议与版权规范，采用「摘要 + 溯源链接」，不全文转载。</li>
+<li><b>审核机制</b>：建立专业审核委员会（对标 Verywell Medical Review Board），内容发布前审校。</li>
+<li><b>避免诊疗</b>：本期不做在线问诊/开药，咨询师目录仅做「转介」，规避互联网诊疗资质风险。</li>
+</ul>
+</div>
+
+<!-- ============ 十一 ============ -->
+<h2 id="s11">十一、运营与增长策略</h2>
+<div class="card">
+<ul class="tight">
+<li><b>测评裂变</b>：结果分享卡（对标 16Personalities）是零成本获客核心抓手。</li>
+<li><b>SEO / 结构化</b>：长尾词条 + JSON-LD，承接 AI 搜索流量（抗传统 SEO 波动）。</li>
+<li><b>专家与机构合作</b>：邀请供稿、收录优质机构，建内容与资源双边。</li>
+<li><b>主题频道深耕</b>：ADHD/焦虑等垂直人群运营，复刻「小切口百万流量」。</li>
+<li><b>公益背书</b>：与 Mind UK / 988 式资源联动，提升可信度与公关安全。</li>
+</ul>
+</div>
+
+<!-- ============ 十二 ============ -->
+<h2 id="s12">十二、三期建设路线与里程碑</h2>
+<div class="card">
+<div class="timeline">
+<div class="tl"><div class="ph">一期 · 导航 + 聚合（MVP）</div><div class="tt">第 1-3 个月</div>
+<ul>
+<li>M0 资源导航目录（导入 TOP50 数据）</li>
+<li>M1 资讯/研究速递</li>
+<li>M3 测评中心（首批公开量表）</li>
+<li>M4 求助资源库</li>
+<li>危机干预组件 + 基础后台</li>
+</ul></div>
+<div class="tl"><div class="ph">二期 · 内容 + 测评 + 留存</div><div class="tt">第 4-8 个月</div>
+<ul>
+<li>M2 结构化知识库</li>
+<li>M3 测评扩充 + 个性化报告</li>
+<li>M9 账号体系与个性化首页</li>
+<li>M6 从业者专区（起步）</li>
+</ul></div>
+<div class="tl"><div class="ph">三期 · 社区 + 服务生态</div><div class="tt">第 9-15 个月</div>
+<ul>
+<li>M5 咨询师/机构目录（转介变现）</li>
+<li>M6 从业者专区完整</li>
+<li>M7 主题频道</li>
+<li>M8 社区互助</li>
+</ul></div>
+</div>
+<div class="callout good"><b>每期验收即上线、数据驱动迭代</b>：一期先验证「资源导航 + 测评」能否获得种子流量；二期用账号体系把跳出率打下来；三期再做双边网络变现。</div>
+</div>
+
+<!-- ============ 十三 ============ -->
+<h2 id="s13">十三、风险与应对</h2>
+<div class="card">
+<div class="table-wrap"><table>
+<tr><th>风险</th><th>说明</th><th>应对</th></tr>
+<tr><td>冷启动内容不足</td><td>聚合平台需大量种子内容</td><td>直接导入 TOP50 报告数据；中文化开放权威内容；专家供稿激励</td></tr>
+<tr><td>沦为链接农场</td><td>浅聚合无价值</td><td>坚持「摘要+溯源+深加工」，建结构化自有资产</td></tr>
+<tr><td>SEO/AI 冲击</td><td>流量被搜索/AI 直接截流</td><td>结构化数据 + 账号留存 + 测评裂变，降低对搜索单点依赖</td></tr>
+<tr><td>合规与版权</td><td>心理内容敏感、量表需授权</td><td>免责声明、危机干预、授权量表、审核委员会（详见第十章）</td></tr>
+<tr><td>变现晚</td><td>聚合前期难盈利</td><td>三期再切入目录会员/转介分佣，前期以流量与留存为目标</td></tr>
+</table></div>
+</div>
+
+<!-- ============ 十四 ============ -->
+<h2 id="s14">十四、验收标准</h2>
+<div class="card">
+<ul class="tight">
+<li><b>一期 MVP 上线验收</b>：资源目录收录 ≥ 300 条（含 TOP50 全量）、测评中心 ≥ 4 套公开量表可完整跑通、求助库覆盖 ≥ 20 国家、全站危机干预组件生效。</li>
+<li><b>性能</b>：首屏 &lt; 2s，移动端可用，Lighthouse SEO ≥ 90。</li>
+<li><b>合规</b>：100% 科普/测评页含免责声明，高危页危机提示覆盖 100%。</li>
+<li><b>数据</b>：上线 3 个月 UV 达 5 万、测评完成 ≥ 2 万次（过程指标，验证方向）。</li>
+<li><b>文档</b>：交付本说明书及配套 UI 原型、接口文档、内容审核 SOP。</li>
+</ul>
+</div>
+
+<div class="foot">
+<p><b>配套文档：</b>《全球心理学网站 TOP50 调研分析报告》（同项目 <code>调研报告/</code> 目录）为本说明书的数据依据。</p>
+<p style="margin-top:8px">编制：WorkBuddy · 2026年7月24日 · 版本 v1.0 · 供「心理学垂直网站项目」建设执行使用</p>
+</div>
+
+</div>
+</body>
+</html>

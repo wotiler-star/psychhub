@@ -1,0 +1,39 @@
+# 依赖
+node_modules/
+.pnp/
+.yarn/
+
+# 构建产物
+dist/
+build/
+.next/
+out/
+*.tsbuildinfo
+
+# 环境 / 密钥（严禁入库）R6.4 / R12
+.env
+.env.local
+.env.*.local
+*.pem
+secrets/
+
+# 日志
+logs/
+*.log
+npm-debug.log*
+
+# 编辑器 / 系统
+.vscode/*
+!.vscode/extensions.json
+.idea/
+.DS_Store
+
+# 覆盖率
+coverage/
+
+# 本地验证临时文件
+web/_*.html
+*.marker
+
+# 本地 AI 工程记忆（非项目源码）
+.workbuddy/

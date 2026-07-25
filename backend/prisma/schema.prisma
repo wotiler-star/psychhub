@@ -1,0 +1,150 @@
+// 心理学聚合平台 · 数据模型（Prisma + PostgreSQL）
+// 覆盖三期实体：资源导航 / 求助资源 / 测评 / 心理资讯 / 咨询师目录 / 咨询师评价 / 账号用户
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+enum ResourceType {
+  MEDIA      // 内容媒体 / 科普
+  SAAS       // 执业者 SaaS / EHR
+  THERAPY    // 在线咨询 / 治疗平台
+  ORG        // 公益组织 / 政府 / 协会
+  TOOL       // 测评 / 专业工具
+  MEDITATION // 冥想 / 自助应用
+  EDU        // 学术 / 教育出版
+}
+
+model Resource {
+  id           String       @id @default(cuid())
+  name         String
+  url          String
+  type         ResourceType
+  country      String?
+  language     String?
+  description  String?
+  trafficLevel String? // 量级描述，如 "2330万/月"
+  suitableFor  String?
+  tags         String[]
+  featured     Boolean      @default(false)
+  createdAt    DateTime     @default(now())
+  updatedAt    DateTime     @updatedAt
+
+  @@index([type])
+  @@index([country])
+  @@index([featured])
+  @@unique([name])
+}
+
+model Helpline {
+  id          String   @id @default(cuid())
+  name        String
+  country     String
+  language    String
+  phone       String?
+  url         String?
+  description String?
+  category    String? // CRISIS / SUPPORT / LOW_COST
+  createdAt   DateTime @default(now())
+
+  @@index([country])
+  @@index([language])
+  @@unique([name])
+}
+
+model Assessment {
+  id            String   @id @default(cuid())
+  slug          String   @unique
+  title         String
+  description   String?
+  type          String? // DEPRESSION / ANXIETY / PERSONALITY
+  questions     Json // [{ id, text, options: [{ score, label }] }]
+  interpretation Json? // 计分区间与解读
+  source        String? // 量表来源与版权说明
+  createdAt     DateTime @default(now())
+}
+
+model Article {
+  id          String   @id @default(cuid())
+  slug        String   @unique
+  title       String
+  excerpt     String? // 摘要
+  content     String // 正文（纯文本，按段落分隔）
+  category    String? // POPSCI 科普 / RESEARCH 研究 / NEWS 资讯
+  tags        String[]
+  sourceName  String? // 来源站点/作者
+  sourceUrl   String? // 原文链接
+  author      String?
+  coverImage  String? // 封面图（可选）
+  publishedAt DateTime @default(now())
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  @@index([category])
+  @@index([publishedAt])
+}
+
+// 咨询师 / 执业者目录（三期「转介层」核心实体）
+model Counselor {
+  id              String   @id @default(cuid())
+  name            String
+  title           String?
+  specialties     String[] // 擅长议题：抑郁/焦虑/关系/创伤...
+  approach        String[] // 取向/流派：CBT/精神动力学/家庭治疗...
+  region          String? // 所在地区（含「远程（全国）」「海外（北美）」等）
+  remote          Boolean  @default(false)
+  languages       String[]
+  pricePerSession Int? // 单次参考价（人民币）
+  currency        String   @default("CNY")
+  org             String? // 所属机构 / 平台
+  bio             String?
+  avatar          String?
+  bookingUrl      String? // 外部预约入口（转介）
+  rating          Float? // 参考评分
+  yearsExperience Int? // 从业年限
+  tags            String[]
+  featured        Boolean  @default(false)
+  reviews         Review[]
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+
+  @@index([region])
+  @@index([featured])
+  @@unique([name])
+}
+
+// 咨询师评价 / 社区 UGC（三期「社区 + 咨询师评价」核心实体）
+model Review {
+  id          String    @id @default(cuid())
+  counselorId String
+  counselor   Counselor @relation(fields: [counselorId], references: [id], onDelete: Cascade)
+  authorName  String
+  authorId    String?
+  rating      Int // 1-5 星
+  content     String
+  status      String    @default("PUBLISHED") // PUBLISHED / HIDDEN（审核 / 合规）
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
+
+  @@index([counselorId])
+  @@index([createdAt])
+}
+
+// 账号 / 用户（三期「账号体系」核心实体）
+// 密码以 bcrypt 哈希存储，绝不落明文；JWT 仅含非敏感字段（id/email/name/role）
+model User {
+  id           String   @id @default(cuid())
+  email        String   @unique
+  name         String
+  passwordHash String
+  role         String   @default("USER") // USER / ADMIN
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+
+  @@index([email])
+}

@@ -1,0 +1,21 @@
+import { Controller, Get, Param } from '@nestjs/common';
+import { ApiTags, ApiOperation } from '@nestjs/swagger';
+import { AssessmentsService } from './assessments.service';
+
+@ApiTags('心理测评')
+@Controller('assessments')
+export class AssessmentsController {
+  constructor(private readonly service: AssessmentsService) {}
+
+  @Get()
+  @ApiOperation({ summary: '获取测评列表（公开版权量表）' })
+  findAll() {
+    return this.service.findAll();
+  }
+
+  @Get(':slug')
+  @ApiOperation({ summary: '获取测评详情（题目与计分区间）' })
+  findOne(@Param('slug') slug: string) {
+    return this.service.findOne(slug);
+  }
+}
