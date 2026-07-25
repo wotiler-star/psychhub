@@ -16,6 +16,7 @@ import { json, urlencoded } from 'express';
 import { PrismaService } from '../src/prisma/prisma.service';
 import { MockPrismaService } from './prisma.mock';
 import { AllExceptionsFilter } from '../src/common/all-exceptions.filter';
+import { installProcessGuards } from '../src/common/process-guard';
 
 async function bootstrap() {
   // AppModule 延迟 require，确保上面的 JWT_SECRET 在其模块求值前已就绪
@@ -32,6 +33,9 @@ async function bootstrap() {
 
   const app = moduleRef.createNestApplication();
   app.enableShutdownHooks(); // 与 main.ts 一致的优雅关闭支持
+  // 与 main.ts 一致：信任 nginx 反向代理透传的 X-Forwarded-*（用底层 Express 实例设置）
+  const httpAdapter = app.getHttpAdapter();
+  (httpAdapter.getInstance() as { set: (k: string, v: unknown) => void }).set('trust proxy', 1);
   app.use(
     helmet({
       contentSecurityPolicy: isProd
@@ -46,6 +50,14 @@ async function bootstrap() {
               imgSrc: ["'self'", 'data:'],
             },
           }
+        : false,
+      // 与 main.ts 一致的安全头强化（本地预览同样启用，便于提前暴露不兼容）
+      crossOriginOpenerPolicy: { policy: 'same-origin' },
+      crossOriginResourcePolicy: { policy: 'same-origin' },
+      referrerPolicy: { policy: 'no-referrer' },
+      xPermittedCrossDomainPolicies: { permittedPolicies: 'none' },
+      strictTransportSecurity: isProd
+        ? { maxAge: 31536000, includeSubDomains: true }
         : false,
     }),
   );
@@ -113,6 +125,7 @@ async function bootstrap() {
   };
   process.once('SIGTERM', () => shutdown('SIGTERM'));
   process.once('SIGINT', () => shutdown('SIGINT'));
+  installProcessGuards(shutdown); // 与 main.ts 一致的进程级异常兜底
   console.log(
     `🚀 E2E 后端就绪（真 NestJS + 内存 Mock Prisma，无 PG）: http://localhost:${port}/api`,
   );

@@ -6,6 +6,7 @@ import compression from 'compression';
 import { json, urlencoded } from 'express';
 import { AppModule } from './app.module';
 import { AllExceptionsFilter } from './common/all-exceptions.filter';
+import { installProcessGuards } from './common/process-guard';
 
 async function bootstrap() {
   // 生产环境：关闭 Swagger（缩小攻击面）+ 启用严格 CSP + 收紧 body 限制
@@ -16,6 +17,12 @@ async function bootstrap() {
 
   // 启用生命周期钩子，支持优雅关闭（SIGTERM / SIGINT 时关闭 Nest 并断开 Prisma）
   app.enableShutdownHooks();
+
+  // 信任反向代理（生产经 nginx 终止 TLS 后透传 X-Forwarded-*）：
+  // 不信任会导致 req.ip 取到代理 IP（限流/IP 日志失真）、secure cookie 标记失效。
+  // 设为 1 表示信任紧邻的第 1 个代理（nginx），X-Forwarded-For 最左端即真实客户端。
+  const httpAdapter = app.getHttpAdapter();
+  (httpAdapter.getInstance() as { set: (k: string, v: unknown) => void }).set('trust proxy', 1);
 
   // 安全响应头。生产启用严格 CSP；非生产关闭 CSP 以兼容 Swagger UI 的内联脚本
   app.use(
@@ -32,6 +39,17 @@ async function bootstrap() {
               imgSrc: ["'self'", 'data:'],
             },
           }
+        : false,
+      // 跨域隔离：禁止本页面被其他源以 window.open 读取、禁止资源被跨源加载，收窄 XSS/边信道面
+      crossOriginOpenerPolicy: { policy: 'same-origin' },
+      crossOriginResourcePolicy: { policy: 'same-origin' },
+      // 默认不泄露来源信息
+      referrerPolicy: { policy: 'no-referrer' },
+      // 禁止 Flash/PDF 等跨域策略文件读取
+      xPermittedCrossDomainPolicies: { permittedPolicies: 'none' },
+      // HSTS 仅在全站 HTTPS 的生产环境启用（经反向代理终止 TLS）；本地下 http 不启以避免浏览器缓存误导
+      strictTransportSecurity: isProd
+        ? { maxAge: 31536000, includeSubDomains: true }
         : false,
     }),
   );
@@ -121,6 +139,9 @@ async function bootstrap() {
   };
   process.once('SIGTERM', () => shutdown('SIGTERM'));
   process.once('SIGINT', () => shutdown('SIGINT'));
+
+  // 进程级兜底：捕获全局未处理异常，记录后触发同一优雅关闭流程，避免静默崩溃
+  installProcessGuards(shutdown);
 
   console.log(
     `🚀 Backend ready at http://localhost:${port}/api` +
