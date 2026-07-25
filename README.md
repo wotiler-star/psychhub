@@ -165,7 +165,12 @@ cd web    && npm ci && npm run build && npm test
 ### 安全加固
 后端已落地生产级安全与韧性措施（不依赖外部服务，沙箱可验证）：
 
-- **Helmet 安全响应头**：`main.ts` 中 `app.use(helmet())` 注入 HSTS / X-Frame-Options / X-Content-Type-Options / Referrer-Policy 等。为兼容 Swagger UI(`/api/docs`) 内联脚本，暂关闭 CSP（`contentSecurityPolicy: false`）；生产若关闭 Swagger 可改严格 CSP。
+- **Helmet 安全响应头**：`main.ts` 中 `app.use(helmet())` 注入 HSTS / X-Frame-Options / X-Content-Type-Options / Referrer-Policy 等。**生产环境启用严格 CSP**（`default-src`/`base-uri`/`frame-ancestors`/`object-src`/`script-src`/`style-src` 均收口 `'self'`，`img-src` 额外放行 `data:`）；**非生产关闭 CSP** 以兼容 Swagger UI 内联脚本。
+- **Swagger 仅非生产开放**：`NODE_ENV=production` 时**不挂载** `/api/docs`，缩小生产攻击面（避免暴露接口契约）；开发/预览环境照常开放。
+- **请求体限制与超时**：接管默认 bodyParser，json/urlencoded 各限 **1MB**；超限返回语义化 **413**、JSON 格式错返回 **400**（替代笼统 500）；生产环境 `requestTimeout=30s` / `headersTimeout=35s` 防慢连接长期占用 worker。
+- **响应压缩**：`helmet` 之后启用 `compression`（gzip / brotli），减小传输体积。
+- **优雅关闭**：`app.enableShutdownHooks()` + 监听 `SIGTERM`/`SIGINT`，关闭时触发 `PrismaService.onModuleDestroy` 断开数据库连接，再 `process.exit(0)`，避免强杀丢连接。
+- **请求关联 ID + 结构化访问日志**：请求中间件注入/透传 `X-Request-Id`（上游传入则沿用，否则生成 UUID），访问日志输出结构化 JSON（`type/requestId/method/path/status/durationMs/ip`），便于 Loki/ELK 集中采集与链路追踪。
 - **全局异常过滤器**（`src/common/all-exceptions.filter.ts`）：统一错误响应为 `{ statusCode, message, timestamp, path }`；`HttpException` 透传其 message（含 class-validator 字段级错误数组），未知异常返回 500 通用文案且**仅在服务端日志保留堆栈**，不向客户端泄露内部细节。
 - **登录 / 注册限流**：`AppModule` 注册 `ThrottlerModule`（全局宽松 200/60s 兜底），并以 `APP_GUARD` 注册 `ThrottlerGuard`；`auth.controller.ts` 的 `login`/`register` 用 `@Throttle({ default: { limit: 5, ttl: 60000 } })` 收紧到 5 次/分钟，防密码爆破与批量注册。
 - **CORS 白名单**：替换原先 `origin: true`（允许任意源）。`main.ts` 按 `ALLOWED_ORIGINS` 环境变量（逗号分隔，缺省 `http://localhost:3400`）校验来源，且仅白名单来源回写 `Access-Control-Allow-Origin` 并允许凭据；非白名单来源被拒。生产部署通过环境变量注入前端域名。
