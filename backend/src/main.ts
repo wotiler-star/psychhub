@@ -2,6 +2,7 @@ import { NestFactory } from '@nestjs/core';
 import { ValidationPipe } from '@nestjs/common';
 import { DocumentBuilder, SwaggerModule } from '@nestjs/swagger';
 import helmet from 'helmet';
+import compression from 'compression';
 import { json, urlencoded } from 'express';
 import { AppModule } from './app.module';
 import { AllExceptionsFilter } from './common/all-exceptions.filter';
@@ -12,6 +13,9 @@ async function bootstrap() {
 
   // bodyParser:false 以接管默认解析器，显式设置 1MB 上限（防超大 payload 耗尽内存）
   const app = await NestFactory.create(AppModule, { bodyParser: false });
+
+  // 启用生命周期钩子，支持优雅关闭（SIGTERM / SIGINT 时关闭 Nest 并断开 Prisma）
+  app.enableShutdownHooks();
 
   // 安全响应头。生产启用严格 CSP；非生产关闭 CSP 以兼容 Swagger UI 的内联脚本
   app.use(
@@ -31,6 +35,9 @@ async function bootstrap() {
         : false,
     }),
   );
+
+  // 响应压缩（gzip / brotli），减小传输体积；放在 helmet 之后、业务中间件之前
+  app.use(compression());
 
   // 请求体大小限制（json / urlencoded 各 1MB）
   app.use(json({ limit: '1mb' }));
@@ -106,6 +113,14 @@ async function bootstrap() {
   const server = app.getHttpServer();
   server.requestTimeout = 30000;
   server.headersTimeout = 35000;
+
+  // 优雅关闭：收到进程终止信号时先停接收新请求，再关闭 Nest（触发 Prisma onModuleDestroy 断连）
+  const shutdown = (signal: string) => {
+    console.log(`收到 ${signal}，开始优雅关闭...`);
+    app.close().then(() => process.exit(0));
+  };
+  process.once('SIGTERM', () => shutdown('SIGTERM'));
+  process.once('SIGINT', () => shutdown('SIGINT'));
 
   console.log(
     `🚀 Backend ready at http://localhost:${port}/api` +

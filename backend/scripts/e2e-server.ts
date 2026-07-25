@@ -11,6 +11,7 @@ import { Test } from '@nestjs/testing';
 import { ValidationPipe } from '@nestjs/common';
 import { DocumentBuilder, SwaggerModule } from '@nestjs/swagger';
 import helmet from 'helmet';
+import compression from 'compression';
 import { json, urlencoded } from 'express';
 import { PrismaService } from '../src/prisma/prisma.service';
 import { MockPrismaService } from './prisma.mock';
@@ -30,6 +31,7 @@ async function bootstrap() {
   const isProd = process.env.NODE_ENV === 'production';
 
   const app = moduleRef.createNestApplication();
+  app.enableShutdownHooks(); // 与 main.ts 一致的优雅关闭支持
   app.use(
     helmet({
       contentSecurityPolicy: isProd
@@ -47,6 +49,7 @@ async function bootstrap() {
         : false,
     }),
   );
+  app.use(compression()); // 与 main.ts 一致的响应压缩
   app.use(json({ limit: '1mb' })); // 与生产方式一致的 body 限制
   app.use(urlencoded({ extended: true, limit: '1mb' }));
   app.use(
@@ -104,6 +107,12 @@ async function bootstrap() {
   const server = app.getHttpServer();
   server.requestTimeout = 30000;
   server.headersTimeout = 35000;
+  const shutdown = (signal: string) => {
+    console.log(`收到 ${signal}，开始优雅关闭...`);
+    app.close().then(() => process.exit(0));
+  };
+  process.once('SIGTERM', () => shutdown('SIGTERM'));
+  process.once('SIGINT', () => shutdown('SIGINT'));
   console.log(
     `🚀 E2E 后端就绪（真 NestJS + 内存 Mock Prisma，无 PG）: http://localhost:${port}/api`,
   );
