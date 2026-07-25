@@ -165,7 +165,9 @@ cd web    && npm ci && npm run build && npm test
 ### 安全加固
 后端已落地生产级安全与韧性措施（不依赖外部服务，沙箱可验证）：
 
-- **Helmet 安全响应头**：`main.ts` 中 `app.use(helmet())` 注入 HSTS / X-Frame-Options / X-Content-Type-Options / Referrer-Policy 等。**生产环境启用严格 CSP**（`default-src`/`base-uri`/`frame-ancestors`/`object-src`/`script-src`/`style-src` 均收口 `'self'`，`img-src` 额外放行 `data:`）；**非生产关闭 CSP** 以兼容 Swagger UI 内联脚本。
+- **Helmet 安全响应头**：`main.ts` 中 `app.use(helmet())` 注入 HSTS / X-Frame-Options / X-Content-Type-Options / Referrer-Policy 等。**生产环境启用严格 CSP**（`default-src`/`base-uri`/`frame-ancestors`/`object-src`/`script-src`/`style-src` 均收口 `'self'`，`img-src` 额外放行 `data:`）；**非生产关闭 CSP** 以兼容 Swagger UI 内联脚本。此外在全环境启用：HSTS（`Strict-Transport-Security: max-age=31536000; includeSubDomains`，仅生产）、`Cross-Origin-Opener-Policy: same-origin`、`Cross-Origin-Resource-Policy: same-origin`、`Referrer-Policy: no-referrer`、`X-Permitted-Cross-Domain-Policies: none`，收窄 XSS/边信道/跨域泄露面。
+- **信任反向代理**：`main.ts` 与 `e2e-server.ts` 均 `app.getHttpAdapter().getInstance().set('trust proxy', 1)`，生产经 nginx 终止 TLS 后正确解析 `X-Forwarded-For` 中的真实客户端 IP，使限流、`X-Request-Id` 日志的 `ip` 字段、secure cookie 标记不再取到代理 IP。
+- **进程级异常兜底**（`src/common/process-guard.ts`）：`installProcessGuards(shutdown)` 捕获全局 `uncaughtException` / `unhandledRejection`，先记录日志再触发同一优雅关闭流程（由容器/k8s/docker 重启），避免进程静默处于不一致状态；含幂等保护（重复安装不再注册多个退出处理器）。
 - **Swagger 仅非生产开放**：`NODE_ENV=production` 时**不挂载** `/api/docs`，缩小生产攻击面（避免暴露接口契约）；开发/预览环境照常开放。
 - **请求体限制与超时**：接管默认 bodyParser，json/urlencoded 各限 **1MB**；超限返回语义化 **413**、JSON 格式错返回 **400**（替代笼统 500）；生产环境 `requestTimeout=30s` / `headersTimeout=35s` 防慢连接长期占用 worker。
 - **响应压缩**：`helmet` 之后启用 `compression`（gzip / brotli），减小传输体积。
