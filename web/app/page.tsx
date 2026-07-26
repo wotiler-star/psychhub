@@ -30,6 +30,18 @@ const ARTICLE_CATEGORY_LABEL: Record<string, string> = {
   NEWS: '资讯',
 };
 
+// 友情链接（导航站常见模块：推荐/合作站点外链，静态配置）
+const FRIEND_LINKS: { name: string; url: string }[] = [
+  { name: '中科院心理研究所', url: 'https://psych.cas.cn' },
+  { name: '简单心理', url: 'https://www.jiandanxinli.com' },
+  { name: '壹心理', url: 'https://www.xinli001.com' },
+  { name: 'KnowYourself', url: 'https://www.knowyourself.cc' },
+  { name: '丁香医生', url: 'https://dxy.com' },
+  { name: 'APA', url: 'https://www.apa.org' },
+  { name: 'Psychology Today', url: 'https://www.psychologytoday.com' },
+  { name: 'Mind (UK)', url: 'https://www.mind.org.uk' },
+];
+
 export const dynamic = 'force-dynamic';
 
 export default async function HomePage() {
@@ -60,6 +72,14 @@ export default async function HomePage() {
   const topSites = [...all]
     .sort((a, b) => trafficScore(b.trafficLevel) - trafficScore(a.trafficLevel))
     .slice(0, 10);
+
+  // 最新收录：按种子录入顺序取最近 8 条（生产环境可改为按 createdAt 降序）
+  const latestResources = all.slice(-8).reverse();
+
+  // 标签云：聚合全部资源标签，按出现频次取 Top 18
+  const tagFreq = new Map<string, number>();
+  for (const r of all) for (const t of (r.tags ?? [])) tagFreq.set(t, (tagFreq.get(t) ?? 0) + 1);
+  const topTags = [...tagFreq.entries()].sort((a, b) => b[1] - a[1]).slice(0, 18);
 
   return (
     <div>
@@ -368,6 +388,23 @@ export default async function HomePage() {
         </section>
       )}
 
+      {/* 🆕 最新收录（导航站常见模块：近期新增资源列表） */}
+      {latestResources.length > 0 && (
+        <section className="container-page" style={{ padding: '8px 20px 24px' }}>
+          <div style={{ display: 'flex', alignItems: 'baseline', justifyContent: 'space-between', marginBottom: 14 }}>
+            <h2 style={{ fontSize: 22, margin: 0 }}>🆕 最新收录</h2>
+            <Link href="/resources" style={{ color: 'var(--muted)', fontSize: 14, whiteSpace: 'nowrap' }}>
+              全部资源 →
+            </Link>
+          </div>
+          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(260px, 1fr))', gap: 16 }}>
+            {latestResources.map((r) => (
+              <ResourceCard key={r.id} resource={r} />
+            ))}
+          </div>
+        </section>
+      )}
+
       {/* 🔥 热门文章（导航站常见模块：文章卡片网格，按发布时间取最新 6 篇） */}
       {articles.length > 0 && (
         <section className="container-page" style={{ padding: '0 20px 24px' }}>
@@ -419,6 +456,61 @@ export default async function HomePage() {
           </div>
         </section>
       )}
+
+      {/* 🏷 标签云（导航站常见模块：按标签快速探索资源） */}
+      {topTags.length > 0 && (
+        <section className="container-page" style={{ padding: '0 20px 24px' }}>
+          <h2 style={{ fontSize: 22, margin: '0 0 14px' }}>🏷 大家都在搜</h2>
+          <div style={{ display: 'flex', flexWrap: 'wrap', gap: 10 }}>
+            {topTags.map(([tag, count]) => (
+              <Link
+                key={tag}
+                href={`/resources?tag=${encodeURIComponent(tag)}`}
+                className="chip"
+                style={{
+                  fontSize: Math.min(18, 12 + count),
+                  padding: '6px 14px',
+                  background: '#eef2ff',
+                  color: 'var(--brand)',
+                  textDecoration: 'none',
+                }}
+              >
+                {tag}
+                <span style={{ opacity: 0.6, marginLeft: 6, fontSize: 11 }}>{count}</span>
+              </Link>
+            ))}
+          </div>
+        </section>
+      )}
+
+      {/* 🔗 友情链接（导航站常见模块：推荐/合作站点外链） */}
+      <section className="container-page" style={{ padding: '0 20px 24px' }}>
+        <h2 style={{ fontSize: 22, margin: '0 0 14px' }}>🔗 友情链接</h2>
+        <div style={{ display: 'flex', flexWrap: 'wrap', gap: 12 }}>
+          {FRIEND_LINKS.map((f) => (
+            <a
+              key={f.url}
+              href={f.url}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="card"
+              style={{
+                color: 'var(--ink)',
+                textDecoration: 'none',
+                padding: '12px 16px',
+                fontSize: 14,
+                fontWeight: 600,
+                display: 'inline-flex',
+                alignItems: 'center',
+                gap: 6,
+              }}
+            >
+              {f.name}
+              <span style={{ color: 'var(--muted)', fontSize: 12 }}>↗</span>
+            </a>
+          ))}
+        </div>
+      </section>
 
       {/* 事实底座（GEO R10.9：可被 AI 引用的定义 / 数据块） */}
       <section className="container-page" style={{ padding: '16px 20px 48px' }}>
