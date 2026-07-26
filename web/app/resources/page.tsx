@@ -18,6 +18,22 @@ interface SP {
   country?: string;
   language?: string;
   tag?: string;
+  sort?: string;
+}
+
+// 将资源 trafficLevel（混合「高/中」与「X万/月」）归一为可比较的热度分，用于排序
+function trafficScore(level: string | null): number {
+  if (!level) return 0;
+  const m = level.match(/(\d+)(?:-(\d+))?万\/月/);
+  if (m) {
+    const lo = Number(m[1]);
+    const hi = m[2] ? Number(m[2]) : lo;
+    return (lo + hi) / 2;
+  }
+  if (level.includes('高')) return 3000;
+  if (level.includes('中')) return 1000;
+  if (level.includes('低')) return 300;
+  return 0;
 }
 
 export default async function ResourcesPage({
@@ -33,11 +49,22 @@ export default async function ResourcesPage({
     language: sp.language,
     tag: sp.tag,
   };
-  const resources = await getResources(query).catch(() => []);
+  const raw = await getResources(query).catch(() => []);
 
-  // 国家选项从数据派生（用于筛选器下拉）
+  // 排序（导航站常见：流量优先 / 名称 A-Z）
+  const resources =
+    sp.sort === 'traffic'
+      ? [...raw].sort((a, b) => trafficScore(b.trafficLevel) - trafficScore(a.trafficLevel))
+      : sp.sort === 'name'
+        ? [...raw].sort((a, b) => a.name.localeCompare(b.name))
+        : raw;
+
+  // 国家 / 语言选项从数据派生（用于筛选器下拉）
   const countries = Array.from(
     new Set(resources.map((r) => r.country).filter((c): c is string => !!c)),
+  ).sort();
+  const languages = Array.from(
+    new Set(resources.map((r) => r.language).filter((c): c is string => !!c)),
   ).sort();
 
   return (
@@ -48,11 +75,11 @@ export default async function ResourcesPage({
         （数据源自《全球心理学网站 TOP50 调研报告》）
       </p>
 
-      <ResourceFilters countries={countries} />
+      <ResourceFilters countries={countries} languages={languages} />
 
       <div style={{ color: 'var(--muted)', fontSize: 14, marginBottom: 16 }}>
         共 {resources.length} 个资源
-        {sp.type || sp.country || sp.q ? '（已按筛选条件）' : ''}
+        {sp.type || sp.country || sp.language || sp.tag || sp.q ? '（已按筛选条件）' : ''}
       </div>
 
       {resources.length === 0 ? (
