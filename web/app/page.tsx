@@ -1,6 +1,7 @@
 import Link from 'next/link';
 import {
   getResources,
+  getFeaturedResources,
   getAssessments,
   getArticles,
   getCounselors,
@@ -11,8 +12,9 @@ import ResourceCard from '@/components/ResourceCard';
 export const dynamic = 'force-dynamic';
 
 export default async function HomePage() {
-  const [all, assessments, articles, counselors] = await Promise.all([
+  const [all, featured, assessments, articles, counselors] = await Promise.all([
     getResources().catch(() => []),
+    getFeaturedResources().catch(() => []),
     getAssessments().catch(() => []),
     getArticles().catch(() => []),
     getCounselors().catch(() => []),
@@ -144,6 +146,80 @@ export default async function HomePage() {
           </Link>
         </div>
       </section>
+
+      {/* ✨ 编辑精选推荐横条（导航站常见模块：横向滚动重点曝光） */}
+      {featured.length > 0 && (
+        <section className="container-page" style={{ padding: '4px 20px 28px' }}>
+          <div style={{ display: 'flex', alignItems: 'baseline', justifyContent: 'space-between', marginBottom: 14 }}>
+            <h2 style={{ fontSize: 22, margin: 0 }}>✨ 编辑精选</h2>
+            <Link href="/resources" style={{ color: 'var(--muted)', fontSize: 14, whiteSpace: 'nowrap' }}>
+              查看全部资源 →
+            </Link>
+          </div>
+          <div
+            style={{
+              display: 'flex',
+              gap: 16,
+              overflowX: 'auto',
+              paddingBottom: 10,
+              scrollSnapType: 'x mandatory',
+              WebkitOverflowScrolling: 'touch',
+            }}
+          >
+            {featured.map((r) => (
+              <a
+                key={r.id}
+                href={r.url}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="card"
+                style={{
+                  flex: '0 0 280px',
+                  scrollSnapAlign: 'start',
+                  color: 'var(--ink)',
+                  textDecoration: 'none',
+                  display: 'flex',
+                  flexDirection: 'column',
+                  gap: 10,
+                }}
+              >
+                <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 8 }}>
+                  <span className={`chip ${RESOURCE_TYPE_META[r.type]?.chip ?? ''}`}>
+                    {RESOURCE_TYPE_META[r.type]?.label ?? r.type}
+                  </span>
+                  {r.country && <span style={{ fontSize: 12, color: 'var(--muted)' }}>🌍 {r.country}</span>}
+                </div>
+                <h3 style={{ fontSize: 17, fontWeight: 700, margin: 0, lineHeight: 1.3 }}>{r.name}</h3>
+                <p
+                  style={{
+                    color: 'var(--muted)',
+                    fontSize: 13,
+                    margin: 0,
+                    lineHeight: 1.7,
+                    flex: 1,
+                    overflow: 'hidden',
+                    display: '-webkit-box',
+                    WebkitLineClamp: 3,
+                    WebkitBoxOrient: 'vertical',
+                  }}
+                >
+                  {r.description}
+                </p>
+                <div style={{ display: 'flex', gap: 6, flexWrap: 'wrap' }}>
+                  {r.tags?.slice(0, 2).map((t) => (
+                    <span key={t} className="chip" style={{ background: '#f1f5f9', color: 'var(--muted)' }}>
+                      {t}
+                    </span>
+                  ))}
+                </div>
+                <span className="btn-primary" style={{ textAlign: 'center', fontSize: 14 }}>
+                  直达资源 →
+                </span>
+              </a>
+            ))}
+          </div>
+        </section>
+      )}
 
       {/* 按分类分组的资源网格（导航站核心范式：每组标题 + 查看更多 + 卡片网格） */}
       {groups.map((g) => (
