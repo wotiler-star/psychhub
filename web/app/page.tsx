@@ -1,35 +1,96 @@
 import Link from 'next/link';
-import { getFeaturedResources, getAssessments, getArticles, getCounselors } from '@/lib/api';
+import {
+  getResources,
+  getAssessments,
+  getArticles,
+  getCounselors,
+} from '@/lib/api';
+import { RESOURCE_TYPES, RESOURCE_TYPE_META } from '@/lib/format';
 import ResourceCard from '@/components/ResourceCard';
 
 export const dynamic = 'force-dynamic';
 
 export default async function HomePage() {
-  const [featured, assessments, articles, counselors] = await Promise.all([
-    getFeaturedResources().catch(() => []),
+  const [all, assessments, articles, counselors] = await Promise.all([
+    getResources().catch(() => []),
     getAssessments().catch(() => []),
     getArticles().catch(() => []),
     getCounselors().catch(() => []),
   ]);
 
-  const featuredCounselors = counselors.filter((c) => c.featured);
+  // 按资源类型分组，每组优先展示 featured，取前 4 个（导航站范式：分类网格）
+  const groups = RESOURCE_TYPES.map((t) => ({
+    type: t,
+    meta: RESOURCE_TYPE_META[t],
+    items: all
+      .filter((r) => r.type === t)
+      .sort((a, b) => Number(b.featured) - Number(a.featured))
+      .slice(0, 4),
+  })).filter((g) => g.items.length > 0);
+
+  // 热门咨询师榜：按评分降序 Top5（导航站范式：🔥 排行榜）
+  const topCounselors = [...counselors]
+    .sort((a, b) => (b.rating ?? 0) - (a.rating ?? 0))
+    .slice(0, 5);
 
   return (
     <div>
-      {/* Hero：前 600px 交代「你是谁、能给我什么」（R5.1 / L5.1） */}
-      <section className="container-page" style={{ padding: '56px 20px 40px' }}>
-        <span className="chip" style={{ marginBottom: 16 }}>中文心理学资源导航平台</span>
-        <h1 style={{ fontSize: 'clamp(28px, 5vw, 44px)', lineHeight: 1.25, margin: '12px 0 16px', fontWeight: 800 }}>
+      {/* Hero：搜索框 + 分类快捷标签 + 主 CTA（对齐导航站范式） */}
+      <section className="container-page" style={{ padding: '48px 20px 28px' }}>
+        <span className="chip" style={{ marginBottom: 14 }}>中文心理学资源导航平台</span>
+        <h1 style={{ fontSize: 'clamp(28px, 5vw, 44px)', lineHeight: 1.25, margin: '12px 0 14px', fontWeight: 800 }}>
           3 次点击内，<br />找到你需要的心理资源
         </h1>
-        <p style={{ fontSize: 18, color: 'var(--muted)', maxWidth: 620, lineHeight: 1.7, margin: '0 0 28px' }}>
+        <p style={{ fontSize: 18, color: 'var(--muted)', maxWidth: 620, lineHeight: 1.7, margin: '0 0 22px' }}>
           我们聚合全球优质心理学网站、公益求助热线与公开版权测评，
           帮你快速筛选、对比、直达。本平台不提供在线诊疗，仅做导航与转介。
         </p>
+
+        {/* 全站搜索框（GET 跳转到 /resources?q=，SSR 友好） */}
+        <form
+          action="/resources"
+          method="get"
+          style={{ display: 'flex', gap: 8, maxWidth: 580, marginBottom: 18 }}
+        >
+          <input
+            name="q"
+            placeholder="搜索心理资源、测评、咨询师…"
+            aria-label="搜索心理资源"
+            style={{
+              flex: 1,
+              minHeight: 48,
+              padding: '0 16px',
+              borderRadius: 12,
+              border: '1px solid var(--line)',
+              fontSize: 16,
+              background: 'var(--card)',
+              color: 'var(--ink)',
+              outline: 'none',
+            }}
+          />
+          <button type="submit" className="btn-primary" style={{ minHeight: 48, fontSize: 16 }}>
+            搜索
+          </button>
+        </form>
+
+        {/* 分类快捷标签栏（对应鱼皮「AI写作 / AI图像…」一行） */}
+        <div style={{ display: 'flex', flexWrap: 'wrap', gap: 8 }}>
+          {RESOURCE_TYPES.map((t) => (
+            <Link
+              key={t}
+              href={`/resources?type=${t}`}
+              className={`chip ${RESOURCE_TYPE_META[t].chip}`}
+              style={{ fontSize: 13, padding: '6px 14px', textDecoration: 'none' }}
+            >
+              {RESOURCE_TYPE_META[t].label}
+            </Link>
+          ))}
+        </div>
+
         {/* 主 CTA ≤ 2（L2.2） */}
-        <div style={{ display: 'flex', gap: 12, flexWrap: 'wrap' }}>
+        <div style={{ display: 'flex', gap: 12, flexWrap: 'wrap', marginTop: 22 }}>
           <Link href="/resources" className="btn-primary" style={{ fontSize: 16 }}>
-            浏览心理资源
+            浏览全部资源
           </Link>
           <Link
             href="/assessments"
@@ -42,6 +103,7 @@ export default async function HomePage() {
               border: '1px solid var(--line)',
               color: 'var(--ink)',
               fontWeight: 600,
+              textDecoration: 'none',
             }}
           >
             免费心理测评
@@ -50,8 +112,8 @@ export default async function HomePage() {
       </section>
 
       {/* 四大核心入口（对应业务目标 R1.2：资源 / 测评 / 求助 / 咨询师） */}
-      <section className="container-page" style={{ padding: '8px 20px 24px' }}>
-        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(260px, 1fr))', gap: 16 }}>
+      <section className="container-page" style={{ padding: '8px 20px 20px' }}>
+        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(240px, 1fr))', gap: 16 }}>
           <Link href="/resources" className="card" style={{ color: 'var(--ink)', textDecoration: 'none' }}>
             <div style={{ fontSize: 13, color: 'var(--brand)', fontWeight: 700 }}>资源导航</div>
             <h3 style={{ margin: '8px 0 6px', fontSize: 18 }}>全球心理学网站目录</h3>
@@ -83,7 +145,74 @@ export default async function HomePage() {
         </div>
       </section>
 
-      {/* 三大核心入口延伸：资讯聚合（二期） */}
+      {/* 按分类分组的资源网格（导航站核心范式：每组标题 + 查看更多 + 卡片网格） */}
+      {groups.map((g) => (
+        <section className="container-page" key={g.type} style={{ padding: '8px 20px 24px' }}>
+          <div style={{ display: 'flex', alignItems: 'baseline', justifyContent: 'space-between', marginBottom: 14 }}>
+            <h2 style={{ fontSize: 22, margin: 0 }}>{g.meta.label}</h2>
+            <Link href={`/resources?type=${g.type}`} style={{ color: 'var(--muted)', fontSize: 14, whiteSpace: 'nowrap' }}>
+              查看更多 →
+            </Link>
+          </div>
+          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(260px, 1fr))', gap: 16 }}>
+            {g.items.map((r) => (
+              <ResourceCard key={r.id} resource={r} />
+            ))}
+          </div>
+        </section>
+      ))}
+
+      {/* 🔥 热门咨询师榜（导航站范式：排行榜） */}
+      {topCounselors.length > 0 && (
+        <section className="container-page" style={{ padding: '8px 20px 24px' }}>
+          <div style={{ display: 'flex', alignItems: 'baseline', justifyContent: 'space-between', marginBottom: 14 }}>
+            <h2 style={{ fontSize: 22, margin: 0 }}>🔥 热门咨询师榜</h2>
+            <Link href="/counselors" style={{ color: 'var(--muted)', fontSize: 14 }}>查看全部 →</Link>
+          </div>
+          <ol style={{ listStyle: 'none', margin: 0, padding: 0, display: 'grid', gap: 10 }}>
+            {topCounselors.map((c, i) => (
+              <li key={c.id}>
+                <Link
+                  href={`/counselors/${c.id}`}
+                  className="card"
+                  style={{ display: 'flex', alignItems: 'center', gap: 14, color: 'var(--ink)', textDecoration: 'none', padding: '14px 18px' }}
+                >
+                  <span
+                    style={{
+                      flexShrink: 0,
+                      width: 28,
+                      height: 28,
+                      borderRadius: 8,
+                      display: 'inline-flex',
+                      alignItems: 'center',
+                      justifyContent: 'center',
+                      fontWeight: 800,
+                      fontSize: 15,
+                      background: i < 3 ? 'var(--brand)' : '#eef2ff',
+                      color: i < 3 ? '#fff' : 'var(--brand)',
+                    }}
+                  >
+                    {i + 1}
+                  </span>
+                  <div style={{ flex: 1, minWidth: 0 }}>
+                    <div style={{ fontWeight: 700, fontSize: 16 }}>{c.name}</div>
+                    <div style={{ fontSize: 12, color: 'var(--muted)', marginTop: 2, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                      {c.specialties.slice(0, 3).join(' · ')}
+                      {c.region ? ` · ${c.region}` : ''}
+                      {c.remote ? ' · 远程' : ''}
+                    </div>
+                  </div>
+                  <span className="chip chip-green" style={{ flexShrink: 0 }}>
+                    {c.rating != null ? `${c.rating} 分` : '暂无评分'}
+                  </span>
+                </Link>
+              </li>
+            ))}
+          </ol>
+        </section>
+      )}
+
+      {/* 心理资讯（二期内容聚合） */}
       <section className="container-page" style={{ padding: '0 20px 24px' }}>
         <div className="card" style={{ color: 'var(--ink)', textDecoration: 'none', display: 'block', background: 'linear-gradient(135deg,#eef4ff,#f8faff)' }}>
           <div style={{ fontSize: 13, color: 'var(--brand)', fontWeight: 700 }}>心理资讯</div>
@@ -101,60 +230,6 @@ export default async function HomePage() {
           </div>
         </div>
       </section>
-
-      {/* 精选咨询师（三期：转介层） */}
-      {featuredCounselors.length > 0 && (
-        <section className="container-page" style={{ padding: '0 20px 24px' }}>
-          <div style={{ display: 'flex', alignItems: 'baseline', justifyContent: 'space-between', marginBottom: 16 }}>
-            <h2 style={{ fontSize: 22, margin: 0 }}>精选咨询师</h2>
-            <Link href="/counselors" style={{ color: 'var(--muted)', fontSize: 14 }}>查看全部 →</Link>
-          </div>
-          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(280px, 1fr))', gap: 16 }}>
-            {featuredCounselors.slice(0, 4).map((c) => (
-              <Link
-                key={c.id}
-                href={`/counselors/${c.id}`}
-                className="card"
-                style={{ color: 'var(--ink)', textDecoration: 'none', display: 'flex', flexDirection: 'column', gap: 8 }}
-              >
-                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', gap: 8 }}>
-                  <div>
-                    <h3 style={{ margin: '0', fontSize: 17 }}>{c.name}</h3>
-                    {c.title && <div style={{ fontSize: 12, color: 'var(--muted)', marginTop: 2 }}>{c.title}</div>}
-                  </div>
-                  <span className="chip chip-green">精选</span>
-                </div>
-                <div style={{ display: 'flex', flexWrap: 'wrap', gap: 6 }}>
-                  {c.specialties.slice(0, 3).map((s) => (
-                    <span key={s} className="chip">
-                      {s}
-                    </span>
-                  ))}
-                </div>
-                <div style={{ fontSize: 13, color: 'var(--muted)' }}>
-                  {c.region}
-                  {c.remote ? ' · 远程' : ''} · {c.pricePerSession != null ? `¥${c.pricePerSession}/次` : '面议'}
-                </div>
-              </Link>
-            ))}
-          </div>
-        </section>
-      )}
-
-      {/* 精选资源（真实 HTML 文本，利于 SEO / GEO） */}
-      {featured.length > 0 && (
-        <section className="container-page" style={{ padding: '32px 20px' }}>
-          <div style={{ display: 'flex', alignItems: 'baseline', justifyContent: 'space-between', marginBottom: 16 }}>
-            <h2 style={{ fontSize: 22, margin: 0 }}>精选资源</h2>
-            <Link href="/resources" style={{ color: 'var(--muted)', fontSize: 14 }}>查看全部 →</Link>
-          </div>
-          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(280px, 1fr))', gap: 16 }}>
-            {featured.map((r) => (
-              <ResourceCard key={r.id} resource={r} />
-            ))}
-          </div>
-        </section>
-      )}
 
       {/* 事实底座（GEO R10.9：可被 AI 引用的定义 / 数据块） */}
       <section className="container-page" style={{ padding: '16px 20px 48px' }}>

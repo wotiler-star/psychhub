@@ -28,9 +28,14 @@ services:
       db:
         condition: service_healthy
     environment:
+      # 生产模式：触发「Swagger 关闭 + 严格 CSP + HSTS」安全收敛
+      NODE_ENV: production
       DATABASE_URL: postgresql://${POSTGRES_USER:-psych}:${POSTGRES_PASSWORD:-psych_pass}@db:5432/${POSTGRES_DB:-psychhub}?schema=public
       PORT: 3001
+      # 生产必改：强随机 32+ 位（openssl rand -hex 32）
       JWT_SECRET: ${JWT_SECRET:-change-me-in-production}
+      # 生产必填：放行的前端源（逗号分隔），缺省仅放行本地预览域名
+      ALLOWED_ORIGINS: ${ALLOWED_ORIGINS:-http://localhost:3400}
     expose:
       - "3001"
     healthcheck:

@@ -8,8 +8,12 @@
 .
 ├── backend/   # 后端 API 服务（NestJS + Prisma + PostgreSQL）
 ├── web/       # 前端站点（Next.js + React + TypeScript + Tailwind）
-└── docker-compose.yml
+├── nginx/     # 反向代理配置
+├── docker-compose.yml
+└── DEPLOY.md  # ← 生产部署指南（环境变量 / TLS / CDN / 迁移 / 回滚 / 安全清单）
 ```
+
+> 🚀 **生产部署**请阅读 [DEPLOY.md](./DEPLOY.md)。
 
 ## 建设原则（强制约束）
 - **前后端分离**：前端（界面/交互）与后端（业务/数据）独立工程、独立部署，仅通过 API 通信（R6.2）。
