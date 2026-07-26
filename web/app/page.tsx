@@ -9,6 +9,27 @@ import {
 import { RESOURCE_TYPES, RESOURCE_TYPE_META } from '@/lib/format';
 import ResourceCard from '@/components/ResourceCard';
 
+// 将资源 trafficLevel（混合「高/中」与「X万/月」）归一为可比较的热度分，用于站点榜单排序
+function trafficScore(level: string | null): number {
+  if (!level) return 0;
+  const m = level.match(/(\d+)(?:-(\d+))?万\/月/);
+  if (m) {
+    const lo = Number(m[1]);
+    const hi = m[2] ? Number(m[2]) : lo;
+    return (lo + hi) / 2;
+  }
+  if (level.includes('高')) return 3000;
+  if (level.includes('中')) return 1000;
+  if (level.includes('低')) return 300;
+  return 0;
+}
+
+const ARTICLE_CATEGORY_LABEL: Record<string, string> = {
+  POPSCI: '科普',
+  RESEARCH: '研究',
+  NEWS: '资讯',
+};
+
 export const dynamic = 'force-dynamic';
 
 export default async function HomePage() {
@@ -34,6 +55,11 @@ export default async function HomePage() {
   const topCounselors = [...counselors]
     .sort((a, b) => (b.rating ?? 0) - (a.rating ?? 0))
     .slice(0, 5);
+
+  // 站点人气榜：按流量热度降序 Top10（导航站范式：🏆 榜单）
+  const topSites = [...all]
+    .sort((a, b) => trafficScore(b.trafficLevel) - trafficScore(a.trafficLevel))
+    .slice(0, 10);
 
   return (
     <div>
@@ -288,24 +314,111 @@ export default async function HomePage() {
         </section>
       )}
 
-      {/* 心理资讯（二期内容聚合） */}
-      <section className="container-page" style={{ padding: '0 20px 24px' }}>
-        <div className="card" style={{ color: 'var(--ink)', textDecoration: 'none', display: 'block', background: 'linear-gradient(135deg,#eef4ff,#f8faff)' }}>
-          <div style={{ fontSize: 13, color: 'var(--brand)', fontWeight: 700 }}>心理资讯</div>
-          <h3 style={{ margin: '8px 0 6px', fontSize: 18 }}>可信科普 · 研究解读 · 求助资源</h3>
-          <p style={{ color: 'var(--muted)', fontSize: 14, margin: '0 0 14px', lineHeight: 1.7 }}>
-            聚合原创与引用的心理学科普、研究解读与求助资源，所有内容标注来源，附「仅供参考」声明。
-          </p>
-          <div style={{ display: 'flex', gap: 10, flexWrap: 'wrap' }}>
-            {articles.slice(0, 3).map((a) => (
-              <Link key={a.id} href={`/articles/${a.slug}`} className="chip" style={{ background: '#fff', color: 'var(--ink)' }}>
-                {a.title}
-              </Link>
-            ))}
-            <Link href="/articles" className="btn-primary" style={{ fontSize: 14 }}>查看全部资讯</Link>
+      {/* 🏆 站点人气榜（导航站范式：🏆 榜单，按流量热度排名） */}
+      {topSites.length > 0 && (
+        <section className="container-page" style={{ padding: '8px 20px 24px' }}>
+          <div style={{ display: 'flex', alignItems: 'baseline', justifyContent: 'space-between', marginBottom: 14 }}>
+            <h2 style={{ fontSize: 22, margin: 0 }}>🏆 站点人气榜</h2>
+            <Link href="/resources" style={{ color: 'var(--muted)', fontSize: 14, whiteSpace: 'nowrap' }}>
+              全部资源 →
+            </Link>
           </div>
-        </div>
-      </section>
+          <ol style={{ listStyle: 'none', margin: 0, padding: 0, display: 'grid', gap: 10 }}>
+            {topSites.map((r, i) => (
+              <li key={r.id}>
+                <a
+                  href={r.url}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="card"
+                  style={{ display: 'flex', alignItems: 'center', gap: 14, color: 'var(--ink)', textDecoration: 'none', padding: '14px 18px' }}
+                >
+                  <span
+                    style={{
+                      flexShrink: 0,
+                      width: 28,
+                      height: 28,
+                      borderRadius: 8,
+                      display: 'inline-flex',
+                      alignItems: 'center',
+                      justifyContent: 'center',
+                      fontWeight: 800,
+                      fontSize: 15,
+                      background: i < 3 ? 'var(--brand)' : '#eef2ff',
+                      color: i < 3 ? '#fff' : 'var(--brand)',
+                    }}
+                  >
+                    {i + 1}
+                  </span>
+                  <div style={{ flex: 1, minWidth: 0 }}>
+                    <div style={{ fontWeight: 700, fontSize: 16 }}>{r.name}</div>
+                    <div style={{ fontSize: 12, color: 'var(--muted)', marginTop: 2, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                      {RESOURCE_TYPE_META[r.type]?.label ?? r.type}
+                      {r.trafficLevel ? ` · 📈 ${r.trafficLevel}` : ''}
+                      {r.country ? ` · ${r.country}` : ''}
+                    </div>
+                  </div>
+                  <span className="chip" style={{ flexShrink: 0, background: '#eef2ff', color: 'var(--brand)' }}>
+                    直达 →
+                  </span>
+                </a>
+              </li>
+            ))}
+          </ol>
+        </section>
+      )}
+
+      {/* 🔥 热门文章（导航站常见模块：文章卡片网格，按发布时间取最新 6 篇） */}
+      {articles.length > 0 && (
+        <section className="container-page" style={{ padding: '0 20px 24px' }}>
+          <div style={{ display: 'flex', alignItems: 'baseline', justifyContent: 'space-between', marginBottom: 14 }}>
+            <h2 style={{ fontSize: 22, margin: 0 }}>🔥 热门文章</h2>
+            <Link href="/articles" style={{ color: 'var(--muted)', fontSize: 14, whiteSpace: 'nowrap' }}>
+              查看全部资讯 →
+            </Link>
+          </div>
+          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(300px, 1fr))', gap: 16 }}>
+            {[...articles]
+              .sort((a, b) => String(b.publishedAt ?? '').localeCompare(String(a.publishedAt ?? '')))
+              .slice(0, 6)
+              .map((a) => (
+                <Link
+                  key={a.id}
+                  href={`/articles/${a.slug}`}
+                  className="card"
+                  style={{ color: 'var(--ink)', textDecoration: 'none', display: 'flex', flexDirection: 'column', gap: 10 }}
+                >
+                  <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 8 }}>
+                    <span className="chip" style={{ background: '#eef2ff', color: 'var(--brand)' }}>
+                      {ARTICLE_CATEGORY_LABEL[a.category ?? ''] ?? a.category ?? ''}
+                    </span>
+                    <span style={{ fontSize: 12, color: 'var(--muted)' }}>{a.publishedAt}</span>
+                  </div>
+                  <h3 style={{ fontSize: 16, fontWeight: 700, margin: 0, lineHeight: 1.4 }}>{a.title}</h3>
+                  <p
+                    style={{
+                      color: 'var(--muted)',
+                      fontSize: 13,
+                      margin: 0,
+                      lineHeight: 1.7,
+                      flex: 1,
+                      overflow: 'hidden',
+                      display: '-webkit-box',
+                      WebkitLineClamp: 3,
+                      WebkitBoxOrient: 'vertical',
+                    }}
+                  >
+                    {a.excerpt}
+                  </p>
+                  <div style={{ fontSize: 12, color: 'var(--muted)' }}>
+                    {a.sourceName}
+                    {a.author ? ` · ${a.author}` : ''}
+                  </div>
+                </Link>
+              ))}
+          </div>
+        </section>
+      )}
 
       {/* 事实底座（GEO R10.9：可被 AI 引用的定义 / 数据块） */}
       <section className="container-page" style={{ padding: '16px 20px 48px' }}>
