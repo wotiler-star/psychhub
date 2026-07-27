@@ -24,7 +24,7 @@ export default function ResourceCard({ resource }: { resource: Resource }) {
           <span style={{ fontSize: 12, color: 'var(--muted)' }}>📈 {resource.trafficLevel}</span>
         )}
         {resource.tags?.slice(0, 3).map((t) => (
-          <span key={t} className="chip" style={{ background: '#f1f5f9', color: 'var(--muted)' }}>
+          <span key={t} className="chip" style={{ background: 'var(--surface-2)', color: 'var(--muted)' }}>
             {t}
           </span>
         ))}

@@ -2,15 +2,24 @@
 
 import { useState } from 'react';
 import type { AssessmentQuestion, AssessmentBand } from '@/lib/types';
+import { saveAssessmentRecord } from '@/lib/assessmentHistory';
 
 interface Props {
   questions: AssessmentQuestion[];
   bands: AssessmentBand[];
+  assessmentSlug: string;
+  assessmentTitle: string;
 }
 
-export default function AssessmentQuiz({ questions, bands }: Props) {
+export default function AssessmentQuiz({
+  questions,
+  bands,
+  assessmentSlug,
+  assessmentTitle,
+}: Props) {
   const [answers, setAnswers] = useState<Record<string, number>>({});
   const [submitted, setSubmitted] = useState(false);
+  const [saved, setSaved] = useState(false);
 
   const total = questions.reduce((s, q) => {
     const raw = answers[q.id] ?? 0;
@@ -29,9 +38,23 @@ export default function AssessmentQuiz({ questions, bands }: Props) {
     setAnswers((prev) => ({ ...prev, [qid]: score }));
   }
 
+  function submit() {
+    const b = bands.find((x) => total <= x.max) ?? bands[bands.length - 1];
+    setSubmitted(true);
+    saveAssessmentRecord({
+      slug: assessmentSlug,
+      title: assessmentTitle,
+      total,
+      level: b.level,
+      advice: b.advice,
+    });
+    setSaved(true);
+  }
+
   function reset() {
     setAnswers({});
     setSubmitted(false);
+    setSaved(false);
   }
 
   return (
@@ -55,7 +78,7 @@ export default function AssessmentQuiz({ questions, bands }: Props) {
                       padding: '10px 12px',
                       border: `1px solid ${checked ? 'var(--brand)' : 'var(--line)'}`,
                       borderRadius: 10,
-                      background: checked ? '#eef2ff' : 'var(--bg)',
+                      background: checked ? 'var(--chip-bg)' : 'var(--bg)',
                       cursor: 'pointer',
                       minHeight: 44,
                     }}
@@ -77,26 +100,33 @@ export default function AssessmentQuiz({ questions, bands }: Props) {
       </ol>
 
       <div style={{ display: 'flex', gap: 12, alignItems: 'center', flexWrap: 'wrap' }}>
-        <button
-          onClick={() => setSubmitted(true)}
-          disabled={answeredCount < questions.length}
-          className="btn-primary"
-          style={{ fontSize: 16, opacity: answeredCount < questions.length ? 0.5 : 1, cursor: answeredCount < questions.length ? 'not-allowed' : 'pointer' }}
-        >
-          查看结果
-        </button>
+        {!submitted && (
+          <button
+            onClick={submit}
+            disabled={answeredCount < questions.length}
+            className="btn-primary"
+            style={{ fontSize: 16, opacity: answeredCount < questions.length ? 0.5 : 1, cursor: answeredCount < questions.length ? 'not-allowed' : 'pointer' }}
+          >
+            查看结果
+          </button>
+        )}
         {submitted && (
           <button onClick={reset} style={{ height: 44, padding: '0 18px', borderRadius: 10, border: '1px solid var(--line)', background: 'var(--card)', color: 'var(--ink)', cursor: 'pointer' }}>
             重新测试
           </button>
         )}
-        {answeredCount < questions.length && (
+        {answeredCount < questions.length && !submitted && (
           <span style={{ color: 'var(--muted)', fontSize: 14 }}>已完成 {answeredCount}/{questions.length}</span>
+        )}
+        {saved && (
+          <span style={{ color: 'var(--alert-success-ink)', fontSize: 14, fontWeight: 600 }}>
+            ✓ 已保存到「我的测评」
+          </span>
         )}
       </div>
 
       {submitted && band && (
-        <div className="card" style={{ marginTop: 24, borderColor: 'var(--brand)', background: '#f8faff' }}>
+        <div className="card" style={{ marginTop: 24, borderColor: 'var(--brand)', background: 'var(--surface-3)' }}>
           <div style={{ display: 'flex', alignItems: 'baseline', gap: 12, flexWrap: 'wrap' }}>
             <span style={{ fontSize: 14, color: 'var(--muted)' }}>总分</span>
             <span style={{ fontSize: 32, fontWeight: 800, color: 'var(--brand)' }}>{total}</span>

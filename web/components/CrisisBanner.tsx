@@ -21,7 +21,7 @@ export default function CrisisBanner() {
           href="/helplines"
           style={{
             marginLeft: 'auto',
-            color: '#b91c1c',
+            color: 'var(--crisis-text)',
             fontWeight: 700,
             textDecoration: 'underline',
           }}

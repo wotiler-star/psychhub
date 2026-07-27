@@ -2,6 +2,7 @@ import type { Metadata } from 'next';
 import Link from 'next/link';
 import { getCounselors } from '@/lib/api';
 import type { Counselor } from '@/lib/types';
+import CounselorFilters from '@/components/CounselorFilters';
 
 export const dynamic = 'force-dynamic';
 
@@ -12,47 +13,55 @@ export const metadata: Metadata = {
   alternates: { canonical: '/counselors' },
 };
 
-const PRICE_TIERS = [
-  { label: '不限', value: '' },
-  { label: '≤ 400 元', value: '400' },
-  { label: '≤ 500 元', value: '500' },
-  { label: '≤ 600 元', value: '600' },
-  { label: '≤ 800 元', value: '800' },
-];
-
-const selectStyle: React.CSSProperties = {
-  minHeight: 40,
-  padding: '0 10px',
-  borderRadius: 8,
-  border: '1px solid var(--line)',
-  background: 'var(--card)',
-  color: 'var(--ink)',
-  fontSize: 14,
-  minWidth: 150,
-};
+interface SP {
+  specialty?: string;
+  region?: string;
+  maxPrice?: string;
+  remote?: string;
+  sort?: string;
+}
 
 export default async function CounselorsPage({
   searchParams,
 }: {
-  searchParams: Promise<{ specialty?: string; region?: string; maxPrice?: string }>;
+  searchParams: Promise<SP>;
 }) {
   const sp = await searchParams;
-  const specialty = sp.specialty || '';
-  const region = sp.region || '';
-  const maxPrice = sp.maxPrice ? Number(sp.maxPrice) : null;
 
-  const all = await getCounselors().catch(() => [] as Counselor[]);
+  const query = {
+    specialty: sp.specialty,
+    region: sp.region,
+    maxPrice: sp.maxPrice ? Number(sp.maxPrice) : undefined,
+    remote: sp.remote === '1' ? true : undefined,
+  };
 
-  const specialties = Array.from(new Set(all.flatMap((c) => c.specialties))).sort();
+  // 取全量用于派生筛选项；取筛选后结果用于展示（后端 mock 已原生支持筛选）
+  const [all, filtered] = await Promise.all([
+    getCounselors().catch(() => [] as Counselor[]),
+    getCounselors(query).catch(() => [] as Counselor[]),
+  ]);
+
+  const specialties = Array.from(
+    new Set(all.flatMap((c) => c.specialties)),
+  ).sort();
   const regions = Array.from(
     new Set(all.map((c) => c.region).filter((r): r is string => !!r)),
   ).sort();
 
-  const list = all
-    .filter((c) => (specialty ? c.specialties.includes(specialty) : true))
-    .filter((c) => (region ? c.region === region : true))
-    .filter((c) => (maxPrice != null ? (c.pricePerSession ?? Infinity) <= maxPrice : true))
-    .sort((a, b) => Number(!!b.featured) - Number(!!a.featured));
+  // 排序（服务端处理后返回，覆盖后端默认 featured 排序）
+  const sort = sp.sort ?? '';
+  const list = [...filtered].sort((a, b) => {
+    if (sort === 'rating') {
+      return (b.rating ?? -1) - (a.rating ?? -1);
+    }
+    if (sort === 'price') {
+      const pa = a.pricePerSession ?? Infinity;
+      const pb = b.pricePerSession ?? Infinity;
+      return pa - pb;
+    }
+    // 综合 / 精选优先：精选置顶
+    return Number(!!b.featured) - Number(!!a.featured);
+  });
 
   return (
     <div className="container-page" style={{ padding: '32px 20px 48px' }}>
@@ -63,56 +72,11 @@ export default async function CounselorsPage({
         如遇紧急危机，请优先拨打公益心理危机干预热线。
       </p>
 
-      {/* 筛选器：原生 form GET，保持 SSR 与可分享 URL（GEO/SEO 友好） */}
-      <form
-        method="get"
-        className="card"
-        style={{ display: 'flex', flexWrap: 'wrap', gap: 12, alignItems: 'flex-end', marginBottom: 24 }}
-      >
-        <label style={{ display: 'flex', flexDirection: 'column', gap: 4, fontSize: 13, color: 'var(--muted)' }}>
-          擅长议题
-          <select name="specialty" defaultValue={specialty} style={selectStyle}>
-            <option value="">全部</option>
-            {specialties.map((s) => (
-              <option key={s} value={s}>
-                {s}
-              </option>
-            ))}
-          </select>
-        </label>
-        <label style={{ display: 'flex', flexDirection: 'column', gap: 4, fontSize: 13, color: 'var(--muted)' }}>
-          地区
-          <select name="region" defaultValue={region} style={selectStyle}>
-            <option value="">全部</option>
-            {regions.map((r) => (
-              <option key={r} value={r}>
-                {r}
-              </option>
-            ))}
-          </select>
-        </label>
-        <label style={{ display: 'flex', flexDirection: 'column', gap: 4, fontSize: 13, color: 'var(--muted)' }}>
-          价格（单次）
-          <select name="maxPrice" defaultValue={sp.maxPrice || ''} style={selectStyle}>
-            {PRICE_TIERS.map((t) => (
-              <option key={t.value} value={t.value}>
-                {t.label}
-              </option>
-            ))}
-          </select>
-        </label>
-        <button type="submit" className="btn-primary" style={{ minHeight: 40 }}>
-          筛选
-        </button>
-        {(specialty || region || sp.maxPrice) && (
-          <Link href="/counselors" className="chip" style={{ alignSelf: 'center', textDecoration: 'none' }}>
-            清除筛选
-          </Link>
-        )}
-      </form>
+      <CounselorFilters specialties={specialties} regions={regions} />
 
       <div style={{ fontSize: 14, color: 'var(--muted)', marginBottom: 12 }}>
         共 {list.length} 位咨询师
+        {sp.specialty || sp.region || sp.maxPrice || sp.remote ? '（已按筛选条件）' : ''}
       </div>
 
       <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(320px, 1fr))', gap: 16 }}>

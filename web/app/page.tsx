@@ -94,9 +94,9 @@ export default async function HomePage() {
           帮你快速筛选、对比、直达。本平台不提供在线诊疗，仅做导航与转介。
         </p>
 
-        {/* 全站搜索框（GET 跳转到 /resources?q=，SSR 友好） */}
+        {/* 全站搜索框（GET 跳转到 /search?q=，统一检索入口） */}
         <form
-          action="/resources"
+          action="/search"
           method="get"
           style={{ display: 'flex', gap: 8, maxWidth: 580, marginBottom: 18 }}
         >
@@ -253,7 +253,7 @@ export default async function HomePage() {
                 </p>
                 <div style={{ display: 'flex', gap: 6, flexWrap: 'wrap' }}>
                   {r.tags?.slice(0, 2).map((t) => (
-                    <span key={t} className="chip" style={{ background: '#f1f5f9', color: 'var(--muted)' }}>
+                    <span key={t} className="chip" style={{ background: 'var(--surface-2)', color: 'var(--muted)' }}>
                       {t}
                     </span>
                   ))}
@@ -310,8 +310,8 @@ export default async function HomePage() {
                       justifyContent: 'center',
                       fontWeight: 800,
                       fontSize: 15,
-                      background: i < 3 ? 'var(--brand)' : '#eef2ff',
-                      color: i < 3 ? '#fff' : 'var(--brand)',
+                      background: i < 3 ? 'var(--brand)' : 'var(--chip-bg)',
+                      color: i < 3 ? 'var(--btn-text)' : 'var(--brand)',
                     }}
                   >
                     {i + 1}
@@ -364,8 +364,8 @@ export default async function HomePage() {
                       justifyContent: 'center',
                       fontWeight: 800,
                       fontSize: 15,
-                      background: i < 3 ? 'var(--brand)' : '#eef2ff',
-                      color: i < 3 ? '#fff' : 'var(--brand)',
+                      background: i < 3 ? 'var(--brand)' : 'var(--chip-bg)',
+                      color: i < 3 ? 'var(--btn-text)' : 'var(--brand)',
                     }}
                   >
                     {i + 1}
@@ -378,7 +378,7 @@ export default async function HomePage() {
                       {r.country ? ` · ${r.country}` : ''}
                     </div>
                   </div>
-                  <span className="chip" style={{ flexShrink: 0, background: '#eef2ff', color: 'var(--brand)' }}>
+                  <span className="chip" style={{ flexShrink: 0, background: 'var(--chip-bg)', color: 'var(--brand)' }}>
                     直达 →
                   </span>
                 </a>
@@ -426,7 +426,7 @@ export default async function HomePage() {
                   style={{ color: 'var(--ink)', textDecoration: 'none', display: 'flex', flexDirection: 'column', gap: 10 }}
                 >
                   <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 8 }}>
-                    <span className="chip" style={{ background: '#eef2ff', color: 'var(--brand)' }}>
+                    <span className="chip" style={{ background: 'var(--chip-bg)', color: 'var(--brand)' }}>
                       {ARTICLE_CATEGORY_LABEL[a.category ?? ''] ?? a.category ?? ''}
                     </span>
                     <span style={{ fontSize: 12, color: 'var(--muted)' }}>{a.publishedAt}</span>
@@ -470,7 +470,7 @@ export default async function HomePage() {
                 style={{
                   fontSize: Math.min(18, 12 + count),
                   padding: '6px 14px',
-                  background: '#eef2ff',
+                  background: 'var(--chip-bg)',
                   color: 'var(--brand)',
                   textDecoration: 'none',
                 }}
@@ -514,7 +514,7 @@ export default async function HomePage() {
 
       {/* 事实底座（GEO R10.9：可被 AI 引用的定义 / 数据块） */}
       <section className="container-page" style={{ padding: '16px 20px 48px' }}>
-        <div className="card" style={{ background: '#f8faff' }}>
+        <div className="card" style={{ background: 'var(--surface-3)' }}>
           <h2 style={{ fontSize: 20, margin: '0 0 12px' }}>关于本平台（事实底座）</h2>
           <ul style={{ margin: 0, paddingLeft: 20, color: 'var(--ink)', lineHeight: 1.9, fontSize: 15 }}>
             <li>定位：中文「心理学资源聚合导航平台」，不做自营在线诊疗，规避牌照风险。</li>

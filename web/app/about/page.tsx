@@ -41,7 +41,7 @@ export default function AboutPage() {
         </p>
       </section>
 
-      <section className="card" style={{ background: '#f8faff' }}>
+      <section className="card" style={{ background: 'var(--surface-3)' }}>
         <h2 style={{ fontSize: 18, margin: '0 0 8px' }}>免责声明</h2>
         <p style={{ color: 'var(--ink)', fontSize: 14, margin: 0, lineHeight: 1.7 }}>
           本站为信息导航与科普用途，不构成任何医疗、心理或法律建议。若你正经历危机，

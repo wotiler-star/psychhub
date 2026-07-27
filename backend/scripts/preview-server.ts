@@ -21,6 +21,53 @@ const PORT = Number(process.env.PORT || 3001);
 let reviewStore: any[] = reviews.map((r) => ({ ...r }));
 // 登录会话：内存态（重启后重置），仅用于演示认证契约
 let sessionUser: { id: string; name: string; email: string } | null = null;
+// 站点收录提交：内存态（重启后重置），仅用于演示 UGC 收录流程（生产由 PostgreSQL 持久化）
+// 预置 3 条 demo 账号提交，覆盖三种审核状态，让登录后「个人中心」可直接看到闭环
+const now = Date.now();
+let submissionStore: any[] = [
+  {
+    id: 'sub-seed-1',
+    kind: 'resource',
+    name: '正念冥想小工具',
+    url: 'https://mindful-example.com',
+    type: 'SAAS',
+    specialty: '',
+    description: '一款帮助用户在碎片时间进行正念呼吸练习的轻量工具。',
+    tags: ['科普', '冥想', '自助工具'],
+    country: '中国',
+    submitterEmail: 'demo@psychhub.cn',
+    status: 'pending',
+    submittedAt: new Date(now - 2 * 86400000).toISOString(),
+  },
+  {
+    id: 'sub-seed-2',
+    kind: 'counselor',
+    name: '李静 · 家庭治疗师',
+    url: 'https://example-counselor.com',
+    type: '',
+    specialty: '家庭治疗',
+    description: '专注家庭关系与亲子沟通，10 年从业经验。',
+    tags: ['家庭治疗', '亲子关系'],
+    country: '中国',
+    submitterEmail: 'demo@psychhub.cn',
+    status: 'approved',
+    submittedAt: new Date(now - 9 * 86400000).toISOString(),
+  },
+  {
+    id: 'sub-seed-3',
+    kind: 'resource',
+    name: '某心理测评平台',
+    url: 'https://example-assess.com',
+    type: 'WEBSITE',
+    specialty: '',
+    description: '提供多种在线心理测评量表，覆盖情绪、压力、睡眠等维度。',
+    tags: ['测评'],
+    country: '中国',
+    submitterEmail: 'demo@psychhub.cn',
+    status: 'rejected',
+    submittedAt: new Date(now - 16 * 86400000).toISOString(),
+  },
+];
 
 function send(res: http.ServerResponse, status: number, data: unknown) {
   const body = JSON.stringify(data);
@@ -207,6 +254,59 @@ const server = http.createServer(async (req, res) => {
       if (!email) return send(res, 400, { error: '邮箱必填' });
       sessionUser = { id: 'u-' + Date.now(), name, email };
       return send(res, 200, { user: sessionUser });
+    }
+
+    // === 站点收录提交（UGC；演示态内存存储，重启后重置；生产由 NestJS + PostgreSQL 持久化）===
+    if (p === '/api/submissions' || p === '/api/submissions/') {
+      if (method === 'POST') {
+        const body = await readBody(req);
+        const kind = (body.kind || '').toString();
+        const name = (body.name || '').toString().trim();
+        const url = (body.url || '').toString().trim();
+        const description = (body.description || '').toString().trim();
+        const email = (body.submitterEmail || '').toString().trim();
+        if (kind !== 'resource' && kind !== 'counselor') {
+          return send(res, 400, { error: '请选择收录类型（资源或咨询师）' });
+        }
+        if (name.length < 2) return send(res, 400, { error: '名称至少 2 个字' });
+        if (!/^https?:\/\/.+/.test(url)) {
+          return send(res, 400, { error: '请输入有效的网址（以 http:// 或 https:// 开头）' });
+        }
+        if (description && description.length < 5) {
+          return send(res, 400, { error: '描述至少 5 个字（或留空）' });
+        }
+        if (email && !/^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(email)) {
+          return send(res, 400, { error: '邮箱格式不正确' });
+        }
+        const submission = {
+          id: 'sub-' + Date.now(),
+          kind,
+          name,
+          url,
+          type: (body.type || '').toString(),
+          specialty: (body.specialty || '').toString(),
+          description,
+          tags: (body.tags || '')
+            .toString()
+            .split(',')
+            .map((t: string) => t.trim())
+            .filter(Boolean),
+          country: (body.country || '').toString(),
+          submitterEmail: email,
+          status: 'pending',
+          submittedAt: new Date().toISOString(),
+        };
+        submissionStore.unshift(submission);
+        return send(res, 200, { submission });
+      }
+      // GET：返回全部待审核收录（演示态开放查看）；?mine=1 时按当前登录邮箱返回「我的提交」
+      const mine = params.get('mine') === '1';
+      if (mine) {
+        const email = params.get('email') || sessionUser?.email || '';
+        const list = email ? submissionStore.filter((s) => s.submitterEmail === email) : [];
+        return send(res, 200, list);
+      }
+      return send(res, 200, submissionStore.slice());
     }
 
     if (p === '/api/health') {

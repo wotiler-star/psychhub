@@ -183,3 +183,61 @@ export async function register(input: {
 export async function logout(): Promise<void> {
   await fetch(`${apiBase()}/api/auth/logout`, { method: 'POST', cache: 'no-store' });
 }
+
+// === 站点收录提交（UGC）===
+export interface SubmissionInput {
+  kind: 'resource' | 'counselor';
+  name: string;
+  url: string;
+  type?: string;
+  specialty?: string;
+  description?: string;
+  tags?: string;
+  country?: string;
+  submitterEmail?: string;
+}
+
+export interface Submission {
+  id: string;
+  kind: 'resource' | 'counselor';
+  name: string;
+  url: string;
+  type: string;
+  specialty: string;
+  description: string;
+  tags: string[];
+  country: string;
+  submitterEmail: string;
+  status: string;
+  submittedAt: string;
+}
+
+export function getSubmissions(): Promise<Submission[]> {
+  return getJson<Submission[]>('/api/submissions');
+}
+
+// 我的收录提交：按当前登录邮箱返回「我」提交的站点/咨询师（?mine=1 由后端按 sessionUser 或 email 匹配）
+export function getMySubmissions(email?: string): Promise<Submission[]> {
+  const qs = email ? `?mine=1&email=${encodeURIComponent(email)}` : '?mine=1';
+  return getJson<Submission[]>(`/api/submissions${qs}`);
+}
+
+export async function submitResource(input: SubmissionInput): Promise<{ submission: Submission }> {
+  const res = await fetch(`${apiBase()}/api/submissions`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify(input),
+    cache: 'no-store',
+  });
+  if (!res.ok) {
+    let msg = `提交失败：${res.status}`;
+    try {
+      const e = await res.json();
+      if (e && e.error) msg = e.error;
+    } catch {
+      /* ignore */
+    }
+    throw new Error(msg);
+  }
+  return (await res.json()) as { submission: Submission };
+}

@@ -1,14 +1,21 @@
 'use client';
 
 import { useRouter, usePathname, useSearchParams } from 'next/navigation';
-import { RESOURCE_TYPES, RESOURCE_TYPE_META } from '@/lib/format';
 
 interface Props {
-  countries: string[];
-  languages: string[];
+  specialties: string[];
+  regions: string[];
 }
 
-export default function ResourceFilters({ countries, languages }: Props) {
+const PRICE_TIERS = [
+  { label: '不限', value: '' },
+  { label: '≤ 400 元', value: '400' },
+  { label: '≤ 500 元', value: '500' },
+  { label: '≤ 600 元', value: '600' },
+  { label: '≤ 800 元', value: '800' },
+];
+
+export default function CounselorFilters({ specialties, regions }: Props) {
   const router = useRouter();
   const pathname = usePathname();
   const sp = useSearchParams();
@@ -20,8 +27,12 @@ export default function ResourceFilters({ countries, languages }: Props) {
     router.push(`${pathname}?${params.toString()}`);
   }
 
-  function toggleType(t: string) {
-    update('type', sp.get('type') === t ? '' : t);
+  function toggleSpecialty(s: string) {
+    update('specialty', sp.get('specialty') === s ? '' : s);
+  }
+
+  function toggleRemote() {
+    update('remote', sp.get('remote') === '1' ? '' : '1');
   }
 
   function clearAll() {
@@ -47,45 +58,43 @@ export default function ResourceFilters({ countries, languages }: Props) {
     fontFamily: 'inherit',
   };
 
-  const type = sp.get('type') ?? '';
-  const q = sp.get('q') ?? '';
-  const country = sp.get('country') ?? '';
-  const language = sp.get('language') ?? '';
-  const tag = sp.get('tag') ?? '';
+  const specialty = sp.get('specialty') ?? '';
+  const region = sp.get('region') ?? '';
+  const maxPrice = sp.get('maxPrice') ?? '';
+  const remote = sp.get('remote') === '1';
   const sort = sp.get('sort') ?? '';
 
   // 当前已激活的筛选条件（导航站常见「已选条件」区，可单独移除）
   const activeChips = [
-    type ? { key: 'type', label: `类型：${RESOURCE_TYPE_META[type as keyof typeof RESOURCE_TYPE_META]?.label ?? type}` } : null,
-    country ? { key: 'country', label: `国家：${country}` } : null,
-    language ? { key: 'language', label: `语言：${language}` } : null,
-    tag ? { key: 'tag', label: `标签：${tag}` } : null,
-    q ? { key: 'q', label: `搜索：${q}` } : null,
+    specialty ? { key: 'specialty', label: `议题：${specialty}` } : null,
+    region ? { key: 'region', label: `地区：${region}` } : null,
+    maxPrice ? { key: 'maxPrice', label: `价格：≤ ${maxPrice} 元` } : null,
+    remote ? { key: 'remote', label: '支持远程' } : null,
   ].filter(Boolean) as { key: string; label: string }[];
 
   return (
     <div style={{ marginBottom: 20 }}>
-      {/* 类型快捷标签栏（导航站核心范式：点击即筛选，当前高亮） */}
+      {/* 擅长议题快捷标签栏（导航站核心范式：点击即筛选，当前高亮） */}
       <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap', marginBottom: 14 }}>
         <button
           type="button"
-          onClick={() => update('type', '')}
+          onClick={() => update('specialty', '')}
           style={{
             ...chipBase,
-            background: type ? 'var(--chip-bg)' : 'var(--brand)',
-            color: type ? 'var(--brand)' : 'var(--btn-text)',
+            background: specialty ? 'var(--chip-bg)' : 'var(--brand)',
+            color: specialty ? 'var(--brand)' : 'var(--btn-text)',
             fontWeight: 700,
           }}
         >
           全部
         </button>
-        {RESOURCE_TYPES.map((t) => {
-          const active = type === t;
+        {specialties.map((s) => {
+          const active = specialty === s;
           return (
             <button
-              key={t}
+              key={s}
               type="button"
-              onClick={() => toggleType(t)}
+              onClick={() => toggleSpecialty(s)}
               style={{
                 ...chipBase,
                 background: active ? 'var(--brand)' : 'var(--chip-bg)',
@@ -93,48 +102,52 @@ export default function ResourceFilters({ countries, languages }: Props) {
                 fontWeight: active ? 700 : 500,
               }}
             >
-              {RESOURCE_TYPE_META[t].label}
+              {s}
             </button>
           );
         })}
       </div>
 
-      {/* 搜索 + 精确筛选 */}
+      {/* 地区 + 价格 + 远程 + 排序 */}
       <div style={{ display: 'flex', gap: 12, flexWrap: 'wrap', alignItems: 'center' }}>
-        <input
-          type="search"
-          placeholder="搜索名称 / 描述 / 标签"
-          defaultValue={q}
-          onChange={(e) => update('q', e.target.value)}
-          style={{ ...base, minWidth: 240 }}
-          aria-label="搜索心理资源"
-        />
         <select
-          aria-label="按国家筛选"
-          defaultValue={country}
-          onChange={(e) => update('country', e.target.value)}
+          aria-label="按地区筛选"
+          defaultValue={region}
+          onChange={(e) => update('region', e.target.value)}
           style={base}
         >
-          <option value="">全部国家</option>
-          {countries.map((c) => (
-            <option key={c} value={c}>
-              {c}
+          <option value="">全部地区</option>
+          {regions.map((r) => (
+            <option key={r} value={r}>
+              {r}
             </option>
           ))}
         </select>
         <select
-          aria-label="按语言筛选"
-          defaultValue={language}
-          onChange={(e) => update('language', e.target.value)}
+          aria-label="按价格筛选"
+          defaultValue={maxPrice}
+          onChange={(e) => update('maxPrice', e.target.value)}
           style={base}
         >
-          <option value="">全部语言</option>
-          {languages.map((l) => (
-            <option key={l} value={l}>
-              {l}
+          {PRICE_TIERS.map((t) => (
+            <option key={t.value} value={t.value}>
+              {t.label}
             </option>
           ))}
         </select>
+        <button
+          type="button"
+          onClick={toggleRemote}
+          style={{
+            ...base,
+            cursor: 'pointer',
+            background: remote ? 'var(--brand)' : 'var(--card)',
+            color: remote ? 'var(--btn-text)' : 'var(--ink)',
+            fontWeight: remote ? 700 : 500,
+          }}
+        >
+          支持远程
+        </button>
         <select
           aria-label="排序方式"
           defaultValue={sort}
@@ -142,8 +155,9 @@ export default function ResourceFilters({ countries, languages }: Props) {
           style={base}
         >
           <option value="">综合排序</option>
-          <option value="traffic">流量优先</option>
-          <option value="name">名称 A-Z</option>
+          <option value="rating">评分高 → 低</option>
+          <option value="price">价格低 → 高</option>
+          <option value="featured">精选优先</option>
         </select>
         {sp.toString() && (
           <button

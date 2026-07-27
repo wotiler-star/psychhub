@@ -1,9 +1,11 @@
 import type { Metadata } from 'next';
 import './globals.css';
 import Header from '@/components/Header';
+import CommandPalette from '@/components/CommandPalette';
 import Footer from '@/components/Footer';
 import CrisisBanner from '@/components/CrisisBanner';
 import { AuthProvider } from '@/components/AuthProvider';
+import { DEFAULT_OG_IMAGE } from '@/lib/og';
 
 const SITE_URL = process.env.NEXT_PUBLIC_SITE_URL || 'https://psych-hub.example.com';
 
@@ -23,6 +25,13 @@ export const metadata: Metadata = {
     title: '心理资源聚合 | 中文心理学资源导航与科普平台',
     description: '聚合全球优质心理资源、公益求助渠道与公开版权测评的一站式中文平台。',
     siteName: '心理资源聚合',
+    images: [{ url: DEFAULT_OG_IMAGE, width: 1200, height: 630, alt: '心理资源聚合' }],
+  },
+  twitter: {
+    card: 'summary_large_image',
+    title: '心理资源聚合 | 中文心理学资源导航与科普平台',
+    description: '聚合全球优质心理资源、公益求助渠道与公开版权测评的一站式中文平台。',
+    images: [DEFAULT_OG_IMAGE],
   },
   robots: { index: true, follow: true },
 };
@@ -38,11 +47,21 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
     slogan: '3 次点击内，找到你需要的心理资源',
   };
   return (
-    <html lang="zh-CN">
+    <html lang="zh-CN" suppressHydrationWarning>
+      <head>
+        {/* 防闪烁：水合前根据 localStorage / 系统偏好定主题，避免暗色闪白 */}
+        <script
+          dangerouslySetInnerHTML={{
+            __html:
+              "(function(){try{var t=localStorage.getItem('theme');if(!t){t=window.matchMedia('(prefers-color-scheme: dark)').matches?'dark':'light';}var e=document.documentElement;e.setAttribute('data-theme',t);e.style.colorScheme=t;}catch(_){}})();",
+          }}
+        />
+      </head>
       <body style={{ margin: 0, minHeight: '100vh', display: 'flex', flexDirection: 'column' }}>
         <AuthProvider>
           <CrisisBanner />
           <Header />
+          <CommandPalette />
           <main style={{ flex: 1 }}>{children}</main>
           <Footer />
         </AuthProvider>

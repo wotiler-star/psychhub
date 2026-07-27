@@ -1,29 +1,88 @@
 @import 'tailwindcss';
 
-/* ===== 设计系统（原则 R4：色板 ≤ 主色1+辅色2+中性灰；字号阶梯 ≤6）===== */
+/* ===== 设计系统（原则 R4：色板 ≤ 主色1+辅色2+中性灰；字号阶梯 ≤6）=====
+   深色模式通过 <html data-theme="dark"> 显式切换（由 Header 按钮 / 首屏脚本控制），
+   不再依赖 prefers-color-scheme 被动触发，用户可手动覆盖。 */
+
 :root {
+  /* 品牌 / 状态色（明暗两态保持一致，仅做轻微降饱和） */
   --brand: #4f46e5;      /* 主色：靛蓝 = 信任 */
   --brand-600: #4338ca;
   --accent: #0ea5e9;     /* 辅色：青 = 行动/信息 */
   --safe: #059669;       /* 绿 = 安全/通过 */
   --warn: #d97706;       /* 橙 = 警示/行动 */
   --danger: #dc2626;     /* 红 = 错误/危机 */
+
+  /* 中性 / 表面（浅色默认值） */
   --ink: #1e293b;
   --muted: #64748b;
   --line: #e2e8f0;
   --bg: #f8fafc;
   --card: #ffffff;
+  --surface-2: #f1f5f9;   /* 非活跃筛选 / 标签底（slate-100） */
+  --surface-3: #f8faff;   /* 浅蓝区块卡片 */
+  --btn-text: #ffffff;      /* 品牌按钮上的文字 */
+  --input-bg: #ffffff;
+  --mark-bg: #fff3bf;      /* 搜索关键词高亮底 */
+
+  /* chip 底（浅色） */
+  --chip-bg: #eef2ff;      /* 靛蓝-50，非活跃 chip 通用底 */
+  --chip-green-bg: #ecfdf5;
+  --chip-orange-bg: #fffbeb;
+  --chip-rose-bg: #fdf2f8;
+  --chip-sky-bg: #f0f9ff;
+  --chip-purple-bg: #f5f3ff;
+  --chip-amber-bg: #fefce8;
+
+  /* 告警盒（浅色） */
+  --alert-danger-bg: #fff1f0;
+  --alert-danger-line: #ffccc7;
+  --alert-danger-ink: #cf1322;
+  --alert-success-bg: #f6ffed;
+  --alert-success-line: #b7eb8f;
+  --alert-success-ink: #389e0d;
+
+  /* 危机提示条（浅色） */
+  --crisis-bg: #fef2f2;
+  --crisis-text: #b91c1c;
+  --crisis-line: #fecaca;
+
+  color-scheme: light;
 }
 
-/* 深色模式（R11.3 prefers-color-scheme）*/
-@media (prefers-color-scheme: dark) {
-  :root {
-    --ink: #e2e8f0;
-    --muted: #94a3b8;
-    --line: #1e293b;
-    --bg: #0f172a;
-    --card: #111c33;
-  }
+/* ===== 暗色模式（显式 data-theme 切换）===== */
+:root[data-theme='dark'] {
+  --ink: #e2e8f0;
+  --muted: #94a3b8;
+  --line: #243049;
+  --bg: #0b1120;
+  --card: #111c33;
+  --surface-2: #0b1322;
+  --surface-3: #0e1830;
+  --btn-text: #ffffff;
+  --input-bg: #0b1322;
+  --mark-bg: #3a2f00;
+
+  --chip-bg: #1e2a4a;
+  --chip-green-bg: #0c2e22;
+  --chip-orange-bg: #3a2a08;
+  --chip-rose-bg: #3a142a;
+  --chip-sky-bg: #0a2a3a;
+  --chip-purple-bg: #251a40;
+  --chip-amber-bg: #3a2e08;
+
+  --alert-danger-bg: #2a1416;
+  --alert-danger-line: #7f1d1d;
+  --alert-danger-ink: #fca5a5;
+  --alert-success-bg: #0c2616;
+  --alert-success-line: #14532d;
+  --alert-success-ink: #86efac;
+
+  --crisis-bg: #2a1414;
+  --crisis-text: #fca5a5;
+  --crisis-line: #7f1d1d;
+
+  color-scheme: dark;
 }
 
 html { scroll-behavior: smooth; }
@@ -55,26 +114,34 @@ a:hover { text-decoration: underline; }
   display: inline-flex; align-items: center; justify-content: center;
   min-height: 44px; /* R3.3 命中区域 ≥44px */
   padding: 0 20px; border-radius: 10px;
-  background: var(--brand); color: #fff; font-weight: 600;
+  background: var(--brand); color: var(--btn-text); font-weight: 600;
   transition: background .15s ease;
 }
 .btn-primary:hover { background: var(--brand-600); text-decoration: none; }
 .chip {
   display: inline-block; border-radius: 999px; padding: 2px 10px;
-  font-size: 12px; font-weight: 600; background: #eef2ff; color: var(--brand);
+  font-size: 12px; font-weight: 600; background: var(--chip-bg); color: var(--brand);
 }
-.chip-green { background: #ecfdf5; color: var(--safe); }
-.chip-orange { background: #fffbeb; color: var(--warn); }
-.chip-rose { background: #fdf2f8; color: #db2777; }
-.chip-sky { background: #f0f9ff; color: #0284c7; }
-.chip-purple { background: #f5f3ff; color: #7c3aed; }
-.chip-amber { background: #fefce8; color: #a16207; }
+.chip-green { background: var(--chip-green-bg); color: var(--safe); }
+.chip-orange { background: var(--chip-orange-bg); color: var(--warn); }
+.chip-rose { background: var(--chip-rose-bg); color: #db2777; }
+.chip-sky { background: var(--chip-sky-bg); color: #0284c7; }
+.chip-purple { background: var(--chip-purple-bg); color: #7c3aed; }
+.chip-amber { background: var(--chip-amber-bg); color: #a16207; }
 
 /* 危机提示条（M4 危机干预组件）*/
 .crisis-bar {
-  background: #fef2f2; color: #b91c1c; border-bottom: 1px solid #fecaca;
+  background: var(--crisis-bg); color: var(--crisis-text);
+  border-bottom: 1px solid var(--crisis-line);
   font-size: 14px;
 }
-@media (prefers-color-scheme: dark) {
-  .crisis-bar { background: #2a1414; color: #fca5a5; border-color: #7f1d1d; }
+
+/* 主题切换按钮 */
+.theme-toggle {
+  display: inline-flex; align-items: center; justify-content: center;
+  width: 36px; height: 36px; min-height: 36px;
+  border-radius: 8px; cursor: pointer;
+  border: 1px solid var(--line); background: var(--card); color: var(--ink);
+  fontSize: 16px; line-height: 1; padding: 0; margin-left: 4px;
 }
+.theme-toggle:hover { border-color: var(--brand); }

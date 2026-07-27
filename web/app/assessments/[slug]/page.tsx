@@ -3,6 +3,7 @@ import { notFound } from 'next/navigation';
 import { getAssessment } from '@/lib/api';
 import AssessmentQuiz from '@/components/AssessmentQuiz';
 import type { AssessmentQuestion, AssessmentBand } from '@/lib/types';
+import { ogImageUrl } from '@/lib/og';
 
 export const dynamic = 'force-dynamic';
 
@@ -14,10 +15,22 @@ export async function generateMetadata({
   const { slug } = await params;
   try {
     const a = await getAssessment(slug);
+    const ogImage = ogImageUrl({ title: a.title, subtitle: a.description, tag: '免费测评' });
     return {
       title: `${a.title} | 免费在线测评`,
       description: a.description ?? undefined,
       alternates: { canonical: `/assessments/${slug}` },
+      openGraph: {
+        title: a.title,
+        description: a.description ?? undefined,
+        images: [{ url: ogImage, width: 1200, height: 630, alt: a.title }],
+      },
+      twitter: {
+        card: 'summary_large_image',
+        title: a.title,
+        description: a.description ?? undefined,
+        images: [ogImage],
+      },
     };
   } catch {
     return { title: '测评未找到' };
@@ -71,7 +84,12 @@ export default async function AssessmentDetail({
         <p style={{ fontSize: 13, color: 'var(--muted)', margin: '0 0 24px' }}>量表来源：{assessment.source}</p>
       )}
 
-      <AssessmentQuiz questions={questions} bands={bands} />
+      <AssessmentQuiz
+        questions={questions}
+        bands={bands}
+        assessmentSlug={assessment.slug}
+        assessmentTitle={assessment.title}
+      />
 
       {/* FAQ 结构化（GEO R10.4 / SEO R9.5） */}
       <section className="card" style={{ marginTop: 32 }}>

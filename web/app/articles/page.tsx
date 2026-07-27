@@ -22,10 +22,11 @@ const CATS = ['POPSCI', 'RESEARCH', 'NEWS'];
 export default async function ArticlesPage({
   searchParams,
 }: {
-  searchParams: Promise<{ category?: string }>;
+  searchParams: Promise<{ category?: string; tag?: string }>;
 }) {
-  const { category } = await searchParams;
-  const articles = await getArticles(category ? { category } : {}).catch(() => []);
+  const { category, tag } = await searchParams;
+  const all = await getArticles(category ? { category } : {}).catch(() => []);
+  const articles = tag ? all.filter((a) => a.tags.includes(tag)) : all;
 
   return (
     <div className="container-page" style={{ padding: '32px 20px 48px' }}>
@@ -38,7 +39,7 @@ export default async function ArticlesPage({
         <Link
           href="/articles"
           className="chip"
-          style={{ background: category ? '#f1f5f9' : 'var(--brand)', color: category ? 'var(--muted)' : '#fff' }}
+          style={{ background: category ? 'var(--surface-2)' : 'var(--brand)', color: category ? 'var(--muted)' : 'var(--btn-text)' }}
         >
           全部
         </Link>
@@ -47,12 +48,25 @@ export default async function ArticlesPage({
             key={c}
             href={`/articles?category=${c}`}
             className="chip"
-            style={{ background: category === c ? 'var(--brand)' : '#f1f5f9', color: category === c ? '#fff' : 'var(--muted)' }}
+            style={{ background: category === c ? 'var(--brand)' : 'var(--surface-2)', color: category === c ? 'var(--btn-text)' : 'var(--muted)' }}
           >
             {CATEGORY_LABEL[c]}
           </Link>
         ))}
       </div>
+
+      {tag && (
+        <div style={{ display: 'flex', gap: 8, alignItems: 'center', marginBottom: 20, fontSize: 14 }}>
+          <span style={{ color: 'var(--muted)' }}>标签筛选：</span>
+          <Link
+            href={category ? `/articles?category=${category}` : '/articles'}
+            className="chip"
+            style={{ background: 'var(--brand)', color: 'var(--btn-text)', textDecoration: 'none' }}
+          >
+            {tag} ✕
+          </Link>
+        </div>
+      )}
 
       <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(300px, 1fr))', gap: 16 }}>
         {articles.map((a) => (
@@ -67,7 +81,7 @@ export default async function ArticlesPage({
             <div style={{ display: 'flex', gap: 6, flexWrap: 'wrap', fontSize: 12, color: 'var(--muted)', alignItems: 'center' }}>
               <span>{a.publishedAt}</span>
               {a.tags.slice(0, 3).map((t) => (
-                <span key={t} className="chip" style={{ fontSize: 12, background: '#f1f5f9' }}>
+                <span key={t} className="chip" style={{ fontSize: 12, background: 'var(--surface-2)' }}>
                   {t}
                 </span>
               ))}

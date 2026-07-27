@@ -42,7 +42,7 @@ export default async function AssessmentsPage() {
             <p style={{ color: 'var(--muted)', fontSize: 14, margin: '0 0 12px', lineHeight: 1.7 }}>{a.description}</p>
             <span className="chip chip-green">免费 · 匿名</span>
             {(a as any).questions?.length > 0 && (
-              <span className="chip" style={{ background: '#f1f5f9', color: 'var(--muted)', marginLeft: 6 }}>
+              <span className="chip" style={{ background: 'var(--surface-2)', color: 'var(--muted)', marginLeft: 6 }}>
                 {(a as any).questions.length} 题
               </span>
             )}

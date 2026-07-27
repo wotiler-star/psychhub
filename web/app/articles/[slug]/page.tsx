@@ -1,6 +1,8 @@
 import type { Metadata } from 'next';
 import Link from 'next/link';
-import { getArticle } from '@/lib/api';
+import { getArticle, getArticles } from '@/lib/api';
+import { ogImageUrl } from '@/lib/og';
+import ShareBar from '@/components/ShareBar';
 
 export const dynamic = 'force-dynamic';
 
@@ -10,6 +12,48 @@ const CATEGORY_LABEL: Record<string, string> = {
   NEWS: '资讯',
 };
 
+// 轻量内容解析：把种子里的纯文本按段落 / 编号条目 / 列表项拆成结构化块，
+// 让「1. 2. 3.」渲染为真正的有序列表，普通文本渲染为段落。
+type Block =
+  | { type: 'p'; text: string }
+  | { type: 'ol'; items: string[] }
+  | { type: 'ul'; items: string[] };
+
+function parseContent(content: string): Block[] {
+  const lines = content.split('\n');
+  const blocks: Block[] = [];
+  let cur: Block | null = null;
+  for (const raw of lines) {
+    const line = raw.trim();
+    if (!line) {
+      cur = null;
+      continue;
+    }
+    const num = line.match(/^\d+[.、)]\s+(.*)$/);
+    const bullet = line.match(/^[-*•]\s+(.*)$/);
+    if (num) {
+      if (!cur || cur.type !== 'ol') {
+        cur = { type: 'ol', items: [] };
+        blocks.push(cur);
+      }
+      cur.items.push(num[1]);
+    } else if (bullet) {
+      if (!cur || cur.type !== 'ul') {
+        cur = { type: 'ul', items: [] };
+        blocks.push(cur);
+      }
+      cur.items.push(bullet[1]);
+    } else {
+      if (!cur || cur.type !== 'p') {
+        cur = { type: 'p', text: '' };
+        blocks.push(cur);
+      }
+      cur.text = cur.text ? cur.text + ' ' + line : line;
+    }
+  }
+  return blocks;
+}
+
 export async function generateMetadata({
   params,
 }: {
@@ -18,10 +62,27 @@ export async function generateMetadata({
   const { slug } = await params;
   try {
     const a = await getArticle(slug);
+    const ogImage = ogImageUrl({
+      title: a.title,
+      subtitle: a.excerpt || undefined,
+      tag: CATEGORY_LABEL[a.category ?? ''] ?? '心理资讯',
+    });
     return {
       title: `${a.title} | 心理资讯`,
       description: a.excerpt || a.title,
       alternates: { canonical: `/articles/${a.slug}` },
+      openGraph: {
+        type: 'article',
+        title: a.title,
+        description: a.excerpt || a.title,
+        images: [{ url: ogImage, width: 1200, height: 630, alt: a.title }],
+      },
+      twitter: {
+        card: 'summary_large_image',
+        title: a.title,
+        description: a.excerpt || a.title,
+        images: [ogImage],
+      },
     };
   } catch {
     return { title: '资讯详情 | 心理资源聚合' };
@@ -50,16 +111,31 @@ export default async function ArticleDetailPage({
     );
   }
 
-  const paragraphs = article.content
-    .split('\n\n')
-    .map((p) => p.trim())
-    .filter(Boolean);
+  const blocks = parseContent(article.content);
+
+  // 相关阅读：按标签重合度 + 同类目加权排序，取前 3 篇（排除当前）
+  const all = await getArticles().catch(() => []);
+  const related = all
+    .filter((a) => a.slug !== article.slug)
+    .map((a) => {
+      const sharedTags = a.tags.filter((t) => article.tags.includes(t)).length;
+      const sameCat = a.category === article.category ? 1 : 0;
+      return { a, score: sharedTags * 2 + sameCat };
+    })
+    .sort((x, y) => y.score - x.score)
+    .slice(0, 3)
+    .map((x) => x.a);
 
   const jsonLd = {
     '@context': 'https://schema.org',
     '@type': 'Article',
     headline: article.title,
     description: article.excerpt || article.title,
+    image: `https://psych-hub.example.com${ogImageUrl({
+      title: article.title,
+      subtitle: article.excerpt || undefined,
+      tag: CATEGORY_LABEL[article.category ?? ''] ?? '心理资讯',
+    })}`,
     datePublished: article.publishedAt,
     author: { '@type': 'Organization', name: article.author || '心理资源聚合' },
     publisher: {
@@ -68,9 +144,7 @@ export default async function ArticleDetailPage({
       url: 'https://psych-hub.example.com',
     },
     mainEntityOfPage: `https://psych-hub.example.com/articles/${article.slug}`,
-    ...(article.sourceUrl
-      ? { isBasedOn: article.sourceUrl }
-      : {}),
+    ...(article.sourceUrl ? { isBasedOn: article.sourceUrl } : {}),
   };
 
   return (
@@ -85,14 +159,29 @@ export default async function ArticleDetailPage({
       </div>
       <h1 style={{ fontSize: 30, lineHeight: 1.35, margin: '8px 0 12px' }}>{article.title}</h1>
 
-      <div style={{ display: 'flex', gap: 10, flexWrap: 'wrap', fontSize: 13, color: 'var(--muted)', alignItems: 'center', marginBottom: 8 }}>
+      <div
+        style={{
+          display: 'flex',
+          gap: 10,
+          flexWrap: 'wrap',
+          fontSize: 13,
+          color: 'var(--muted)',
+          alignItems: 'center',
+          marginBottom: 8,
+        }}
+      >
         <span>{article.publishedAt}</span>
         {article.author && <span>· 作者 {article.author}</span>}
         {article.sourceName && (
           <span>
             · 来源{' '}
             {article.sourceUrl ? (
-              <a href={article.sourceUrl} target="_blank" rel="noopener noreferrer" style={{ color: 'var(--brand)' }}>
+              <a
+                href={article.sourceUrl}
+                target="_blank"
+                rel="noopener noreferrer"
+                style={{ color: 'var(--brand)' }}
+              >
                 {article.sourceName}
               </a>
             ) : (
@@ -102,28 +191,101 @@ export default async function ArticleDetailPage({
         )}
       </div>
 
+      <div style={{ margin: '10px 0 14px' }}>
+        <ShareBar
+          title={article.title}
+          ogImage={ogImageUrl({
+            title: article.title,
+            subtitle: article.excerpt || undefined,
+            tag: CATEGORY_LABEL[article.category ?? ''] ?? '心理资讯',
+          })}
+        />
+      </div>
+
       <div style={{ display: 'flex', gap: 6, flexWrap: 'wrap', margin: '8px 0 20px' }}>
         {article.tags.map((t) => (
-          <span key={t} className="chip" style={{ fontSize: 12, background: '#f1f5f9' }}>
+          <Link
+            key={t}
+            href={`/articles?tag=${encodeURIComponent(t)}`}
+            className="chip"
+            style={{ fontSize: 12, background: 'var(--surface-2)', color: 'var(--muted)', textDecoration: 'none' }}
+          >
             {t}
-          </span>
+          </Link>
         ))}
       </div>
 
       <div style={{ fontSize: 16, lineHeight: 1.9, color: 'var(--ink)' }}>
-        {paragraphs.map((p, i) => (
-          <p key={i} style={{ margin: '0 0 16px' }}>
-            {p}
-          </p>
-        ))}
+        {blocks.map((b, i) => {
+          if (b.type === 'p') {
+            return (
+              <p key={i} style={{ margin: '0 0 16px' }}>
+                {b.text}
+              </p>
+            );
+          }
+          if (b.type === 'ol') {
+            return (
+              <ol key={i} style={{ margin: '0 0 16px', paddingLeft: 22, lineHeight: 1.9 }}>
+                {b.items.map((it, j) => (
+                  <li key={j} style={{ marginBottom: 6 }}>
+                    {it}
+                  </li>
+                ))}
+              </ol>
+            );
+          }
+          return (
+            <ul key={i} style={{ margin: '0 0 16px', paddingLeft: 22, lineHeight: 1.9 }}>
+              {b.items.map((it, j) => (
+                <li key={j} style={{ marginBottom: 6 }}>
+                  {it}
+                </li>
+              ))}
+            </ul>
+          );
+        })}
       </div>
 
-      <div className="callout" style={{ marginTop: 28, fontSize: 14, color: 'var(--muted)', lineHeight: 1.7 }}>
+      <div
+        className="callout"
+        style={{ marginTop: 28, fontSize: 14, color: 'var(--muted)', lineHeight: 1.7 }}
+      >
         ⚠ 本文内容仅供心理健康科普与自我觉察参考，<strong>不构成医学诊断或治疗建议</strong>。如有持续困扰，请使用本站「求助资源」中的专业热线。
       </div>
 
+      {related.length > 0 && (
+        <div style={{ marginTop: 36, borderTop: '1px solid #e5e7eb', paddingTop: 24 }}>
+          <h2 style={{ fontSize: 20, margin: '0 0 16px' }}>相关阅读</h2>
+          <div
+            style={{
+              display: 'grid',
+              gridTemplateColumns: 'repeat(auto-fill, minmax(220px, 1fr))',
+              gap: 12,
+            }}
+          >
+            {related.map((a) => (
+              <Link
+                key={a.id}
+                href={`/articles/${a.slug}`}
+                className="card"
+                style={{ color: 'var(--ink)', textDecoration: 'none', padding: 16 }}
+              >
+                <div style={{ fontSize: 12, color: 'var(--brand)', fontWeight: 700 }}>
+                  {a.category ? (CATEGORY_LABEL[a.category] ?? a.category) : '资讯'}
+                </div>
+                <div style={{ fontSize: 15, fontWeight: 600, margin: '6px 0 4px', lineHeight: 1.4 }}>
+                  {a.title}
+                </div>
+                <div style={{ fontSize: 12, color: 'var(--muted)' }}>{a.publishedAt}</div>
+              </Link>
+            ))}
+          </div>
+        </div>
+      )}
+
       <div style={{ marginTop: 28 }}>
-        <Link href="/articles" className="chip" style={{ background: 'var(--brand)', color: '#fff' }}>
+        <Link href="/articles" className="chip" style={{ background: 'var(--brand)', color: 'var(--btn-text)' }}>
           ← 返回心理资讯
         </Link>
       </div>

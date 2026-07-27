@@ -4,6 +4,7 @@ import Link from 'next/link';
 import { getCounselor, getCounselorReviews } from '@/lib/api';
 import type { Counselor, Review } from '@/lib/types';
 import ReviewForm from '@/components/ReviewForm';
+import { ogImageUrl } from '@/lib/og';
 
 export const dynamic = 'force-dynamic';
 
@@ -15,10 +16,29 @@ export async function generateMetadata({
   const { id } = await params;
   try {
     const c = await getCounselor(id);
+    const desc =
+      c.bio ?? `${c.name}，${c.title ?? '心理咨询师'}，擅长${c.specialties.join('、')}。`;
+    const ogImage = ogImageUrl({
+      title: `${c.name} · ${c.title ?? '心理咨询师'}`,
+      subtitle: `擅长：${c.specialties.slice(0, 4).join(' / ')}`,
+      tag: '咨询师',
+    });
     return {
       title: `${c.name} | 心理咨询师`,
-      description: c.bio ?? `${c.name}，${c.title ?? '心理咨询师'}，擅长${c.specialties.join('、')}。`,
+      description: desc,
       alternates: { canonical: `/counselors/${id}` },
+      openGraph: {
+        type: 'profile',
+        title: `${c.name} · ${c.title ?? '心理咨询师'}`,
+        description: desc,
+        images: [{ url: ogImage, width: 1200, height: 630, alt: c.name }],
+      },
+      twitter: {
+        card: 'summary_large_image',
+        title: `${c.name} · ${c.title ?? '心理咨询师'}`,
+        description: desc,
+        images: [ogImage],
+      },
     };
   } catch {
     return { title: '咨询师未找到' };

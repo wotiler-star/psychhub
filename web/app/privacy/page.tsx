@@ -52,7 +52,7 @@ export default function PrivacyPage() {
         </p>
       </section>
 
-      <section className="card" style={{ background: '#fff7ed' }}>
+      <section className="card" style={{ background: 'var(--surface-2)' }}>
         <p style={{ margin: 0, fontSize: 14, lineHeight: 1.7, color: 'var(--ink)' }}>
           本站为信息导航与科普用途，<strong>不构成医疗建议</strong>。本政策可能不定期更新，重大变更将在此页说明。
         </p>
