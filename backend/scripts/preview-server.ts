@@ -6,13 +6,24 @@
 import http from 'node:http';
 import { URL } from 'node:url';
 import {
-  resources,
+  resources as seedResources,
   helplines,
   assessments,
   articles,
   counselors,
   reviews,
 } from '../prisma/seed-data';
+
+// 资源补稳定派生 id（生产由 Prisma cuid 生成；预览用 slug 化名称保证稳定可分享）
+const resources = seedResources.map((r: any, i: number) => ({
+  id:
+    'r-' +
+    (String(r.name)
+      .toLowerCase()
+      .replace(/[^a-z0-9]+/g, '-')
+      .replace(/^-+|-+$/g, '') || String(i + 1)),
+  ...r,
+}));
 
 const PORT = Number(process.env.PORT || 3001);
 
@@ -141,7 +152,8 @@ const server = http.createServer(async (req, res) => {
     }
     const resMatch = p.match(/^\/api\/resources\/([^/]+)$/);
     if (resMatch) {
-      const item = resources.find((r) => r.name === decodeURIComponent(resMatch[1]));
+      const key = decodeURIComponent(resMatch[1]);
+      const item = resources.find((r) => r.id === key || r.name === key);
       return item ? send(res, 200, item) : send(res, 404, { error: 'not found' });
     }
     if (p === '/api/helplines' || p === '/api/helplines/') {

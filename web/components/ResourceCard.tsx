@@ -1,6 +1,7 @@
 import type { Resource } from '@/lib/types';
 import { RESOURCE_TYPE_META } from '@/lib/format';
 import BookmarkButton from '@/components/BookmarkButton';
+import CompareToggle from '@/components/CompareToggle';
 
 export default function ResourceCard({ resource }: { resource: Resource }) {
   const meta = RESOURCE_TYPE_META[resource.type] ?? { label: resource.type, chip: '' };
@@ -31,6 +32,9 @@ export default function ResourceCard({ resource }: { resource: Resource }) {
           ))}
         </div>
       </a>
+      <div style={{ marginTop: 12 }}>
+        <CompareToggle id={resource.id} name={resource.name} />
+      </div>
       <div style={{ position: 'absolute', top: 12, right: 12 }}>
         <BookmarkButton
           type="resource"

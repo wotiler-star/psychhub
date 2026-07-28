@@ -3,6 +3,7 @@ import { getResources } from '@/lib/api';
 import ResourceCard from '@/components/ResourceCard';
 import ResourceFilters from '@/components/ResourceFilters';
 import Pager from '@/components/Pager';
+import CompareBar from '@/components/CompareBar';
 import { breadcrumbJsonLd, JsonLdScript } from '@/lib/jsonld';
 import { paginate, withPagination } from '@/lib/paginate';
 
@@ -137,6 +138,7 @@ export default async function ResourcesPage({
       )}
 
       <Pager basePath="/resources" params={sp} page={page} totalPages={totalPages} />
+      <CompareBar />
     </div>
   );
 }

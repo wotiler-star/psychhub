@@ -42,6 +42,7 @@ interface SP {
   specialty?: string;
   region?: string;
   maxPrice?: string;
+  minRating?: string;
   remote?: string;
   sort?: string;
   page?: string;
@@ -75,9 +76,13 @@ export default async function CounselorsPage({
     new Set(all.map((c) => c.region).filter((r): r is string => !!r)),
   ).sort();
 
+  // 最低评分过滤（前端派生，后端 mock 无此参数）
+  const minRating = sp.minRating ? Number(sp.minRating) : 0;
+  const rated = minRating > 0 ? filtered.filter((c) => (c.rating ?? 0) >= minRating) : filtered;
+
   // 排序（服务端处理后返回，覆盖后端默认 featured 排序）
   const sort = sp.sort ?? '';
-  const list = [...filtered].sort((a, b) => {
+  const list = [...rated].sort((a, b) => {
     if (sort === 'rating') {
       return (b.rating ?? -1) - (a.rating ?? -1);
     }
@@ -121,7 +126,7 @@ export default async function CounselorsPage({
 
       <div style={{ fontSize: 14, color: 'var(--muted)', marginBottom: 12 }}>
         共 {list.length} 位咨询师
-        {sp.specialty || sp.region || sp.maxPrice || sp.remote ? '（已按筛选条件）' : ''}
+        {sp.specialty || sp.region || sp.maxPrice || sp.minRating || sp.remote ? '（已按筛选条件）' : ''}
       </div>
 
       <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(320px, 1fr))', gap: 16 }}>

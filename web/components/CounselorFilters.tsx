@@ -15,6 +15,13 @@ const PRICE_TIERS = [
   { label: '≤ 800 元', value: '800' },
 ];
 
+const RATING_TIERS = [
+  { label: '评分不限', value: '' },
+  { label: '★ 4.5 以上', value: '4.5' },
+  { label: '★ 4.8 以上', value: '4.8' },
+  { label: '★ 4.9 以上', value: '4.9' },
+];
+
 export default function CounselorFilters({ specialties, regions }: Props) {
   const router = useRouter();
   const pathname = usePathname();
@@ -61,6 +68,7 @@ export default function CounselorFilters({ specialties, regions }: Props) {
   const specialty = sp.get('specialty') ?? '';
   const region = sp.get('region') ?? '';
   const maxPrice = sp.get('maxPrice') ?? '';
+  const minRating = sp.get('minRating') ?? '';
   const remote = sp.get('remote') === '1';
   const sort = sp.get('sort') ?? '';
 
@@ -69,6 +77,7 @@ export default function CounselorFilters({ specialties, regions }: Props) {
     specialty ? { key: 'specialty', label: `议题：${specialty}` } : null,
     region ? { key: 'region', label: `地区：${region}` } : null,
     maxPrice ? { key: 'maxPrice', label: `价格：≤ ${maxPrice} 元` } : null,
+    minRating ? { key: 'minRating', label: `评分：★ ${minRating} 以上` } : null,
     remote ? { key: 'remote', label: '支持远程' } : null,
   ].filter(Boolean) as { key: string; label: string }[];
 
@@ -130,6 +139,18 @@ export default function CounselorFilters({ specialties, regions }: Props) {
           style={base}
         >
           {PRICE_TIERS.map((t) => (
+            <option key={t.value} value={t.value}>
+              {t.label}
+            </option>
+          ))}
+        </select>
+        <select
+          aria-label="按最低评分筛选"
+          defaultValue={minRating}
+          onChange={(e) => update('minRating', e.target.value)}
+          style={base}
+        >
+          {RATING_TIERS.map((t) => (
             <option key={t.value} value={t.value}>
               {t.label}
             </option>
