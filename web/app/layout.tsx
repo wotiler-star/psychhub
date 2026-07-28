@@ -1,4 +1,4 @@
-import type { Metadata } from 'next';
+import type { Metadata, Viewport } from 'next';
 import './globals.css';
 import Header from '@/components/Header';
 import CommandPalette from '@/components/CommandPalette';
@@ -39,6 +39,16 @@ export const metadata: Metadata = {
   category: 'health',
 };
 
+// 视口与浏览器 UI 主题色（明暗两态），避免移动端地址栏闪烁/突兀
+export const viewport: Viewport = {
+  width: 'device-width',
+  initialScale: 1,
+  themeColor: [
+    { media: '(prefers-color-scheme: light)', color: '#f8fafc' },
+    { media: '(prefers-color-scheme: dark)', color: '#0b1120' },
+  ],
+};
+
 export default function RootLayout({ children }: { children: React.ReactNode }) {
   const orgJsonLd = {
     '@context': 'https://schema.org',
@@ -65,11 +75,14 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
         <link rel="alternate" type="application/rss+xml" href="/rss.xml" title="RSS Feed" />
       </head>
       <body style={{ margin: 0, minHeight: '100vh', display: 'flex', flexDirection: 'column' }}>
+        <a className="skip-link" href="#main-content">跳到主内容</a>
         <AuthProvider>
           <CrisisBanner />
           <Header />
           <CommandPalette />
-          <main style={{ flex: 1 }}>{children}</main>
+          <main id="main-content" tabIndex={-1} style={{ flex: 1, outline: 'none' }}>
+            {children}
+          </main>
           <Footer />
         </AuthProvider>
         <script

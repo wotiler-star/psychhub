@@ -15,7 +15,8 @@
 
   /* 中性 / 表面（浅色默认值） */
   --ink: #1e293b;
-  --muted: #64748b;
+  /* 加深以满足 WCAG AA 文本对比度（≥4.5:1，原 #64748b 在本底约 4.45:1 临界） */
+  --muted: #5b6b80;
   --line: #e2e8f0;
   --bg: #f8fafc;
   --card: #ffffff;
@@ -85,7 +86,10 @@
   color-scheme: dark;
 }
 
-html { scroll-behavior: smooth; }
+/* 平滑滚动仅在用户未要求「减少动态效果」时启用（无障碍：尊重 prefers-reduced-motion） */
+@media (prefers-reduced-motion: no-preference) {
+  html { scroll-behavior: smooth; }
+}
 body {
   background: var(--bg);
   color: var(--ink);
@@ -145,3 +149,39 @@ a:hover { text-decoration: underline; }
   fontSize: 16px; line-height: 1; padding: 0; margin-left: 4px;
 }
 .theme-toggle:hover { border-color: var(--brand); }
+
+/* ===== 无障碍增强（A11y）===== */
+
+/* 跳到主内容：默认移出视野，键盘聚焦时滑入（屏幕阅读器/键盘用户可达） */
+.skip-link {
+  position: absolute;
+  left: 12px;
+  top: -56px;
+  z-index: 100;
+  padding: 10px 16px;
+  border-radius: 8px;
+  background: var(--brand);
+  color: var(--btn-text);
+  font-weight: 700;
+  text-decoration: none;
+  transition: top .15s ease;
+}
+.skip-link:focus { top: 12px; text-decoration: none; }
+
+/* 全局键盘焦点环：覆盖组件内的 inline outline:none（用 !important 击败内联样式）
+   仅键盘聚焦(:focus-visible)显示，鼠标点击不显示，符合 WCAG 2.4.7 */
+:focus-visible {
+  outline: 2px solid var(--brand) !important;
+  outline-offset: 2px !important;
+  border-radius: 4px;
+}
+
+/* 减少动态效果：关闭动画/过渡/平滑滚动（前庭功能/光敏感用户） */
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after {
+    animation-duration: 0.001ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.001ms !important;
+    scroll-behavior: auto !important;
+  }
+}

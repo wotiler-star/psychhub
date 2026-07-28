@@ -83,7 +83,7 @@ export default function Header() {
           </span>
           心理资源聚合
         </Link>
-        <nav style={{ display: 'flex', gap: 4, alignItems: 'center', flexWrap: 'wrap' }}>
+        <nav aria-label="主导航" style={{ display: 'flex', gap: 4, alignItems: 'center', flexWrap: 'wrap' }}>
           {NAV.map((n) => (
             <Link
               key={n.href}

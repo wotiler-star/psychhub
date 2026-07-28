@@ -3,7 +3,7 @@ import Link from 'next/link';
 
 export default function CrisisBanner() {
   return (
-    <div className="crisis-bar">
+    <div className="crisis-bar" role="region" aria-label="危机求助热线">
       <div
         className="container-page"
         style={{

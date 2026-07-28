@@ -26,7 +26,7 @@ export default function Footer() {
             帮助你在 3 次点击内找到所需。本平台不提供在线诊疗服务。
           </p>
         </div>
-        <div style={{ display: 'flex', gap: 40, flexWrap: 'wrap' }}>
+        <nav aria-label="页脚导航" style={{ display: 'flex', gap: 40, flexWrap: 'wrap' }}>
           <div>
             <div style={{ fontWeight: 700, marginBottom: 8 }}>导航</div>
             <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
@@ -43,7 +43,7 @@ export default function Footer() {
               <a href="/helplines" style={{ color: 'var(--muted)', fontSize: 14 }}>危机求助</a>
             </div>
           </div>
-        </div>
+        </nav>
       </div>
       <div
         className="container-page"

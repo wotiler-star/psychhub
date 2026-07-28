@@ -181,6 +181,7 @@ export default function CommandPalette() {
   return (
     <div
       onClick={() => setOpen(false)}
+      role="presentation"
       style={{
         position: 'fixed',
         inset: 0,
@@ -193,6 +194,9 @@ export default function CommandPalette() {
       }}
     >
       <div
+        role="dialog"
+        aria-modal="true"
+        aria-label="命令面板"
         onClick={(e) => e.stopPropagation()}
         style={{
           width: '100%',
@@ -206,10 +210,17 @@ export default function CommandPalette() {
       >
         <input
           ref={inputRef}
+          id="command-palette-input"
           value={query}
           onChange={(e) => setQuery(e.target.value)}
           onKeyDown={onKeyDownInput}
           placeholder="搜索资源、咨询师、资讯，或输入 / 跳转…"
+          role="combobox"
+          aria-expanded={items.length > 0}
+          aria-controls="command-palette-list"
+          aria-autocomplete="list"
+          aria-activedescendant={items[active] ? items[active].key : undefined}
+          aria-label="搜索或输入命令跳转"
           style={{
             width: '100%',
             boxSizing: 'border-box',
@@ -222,14 +233,23 @@ export default function CommandPalette() {
             outline: 'none',
           }}
         />
-        <div ref={listRef} style={{ maxHeight: 360, overflowY: 'auto', padding: 6 }}>
+        <div
+          ref={listRef}
+          id="command-palette-list"
+          role="listbox"
+          aria-label="搜索结果"
+          style={{ maxHeight: 360, overflowY: 'auto', padding: 6 }}
+        >
           {items.length === 0 && (
-            <div style={{ padding: 16, color: 'var(--muted)' }}>无匹配结果</div>
+            <div role="presentation" style={{ padding: 16, color: 'var(--muted)' }}>无匹配结果</div>
           )}
           {items.map((it, i) => (
             <div
               key={it.key}
+              id={it.key}
               data-idx={i}
+              role="option"
+              aria-selected={i === active}
               onMouseEnter={() => setActive(i)}
               onClick={() => go(it.href)}
               style={{
