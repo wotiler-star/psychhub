@@ -2,6 +2,7 @@ import type { Metadata } from 'next';
 import { getResources } from '@/lib/api';
 import ResourceCard from '@/components/ResourceCard';
 import ResourceFilters from '@/components/ResourceFilters';
+import { breadcrumbJsonLd, JsonLdScript } from '@/lib/jsonld';
 
 export const dynamic = 'force-dynamic';
 
@@ -69,6 +70,12 @@ export default async function ResourcesPage({
 
   return (
     <div className="container-page" style={{ padding: '32px 20px 48px' }}>
+      <JsonLdScript
+        data={breadcrumbJsonLd([
+          { name: '首页', url: '/' },
+          { name: '心理资源导航', url: '/resources' },
+        ])}
+      />
       <h1 style={{ fontSize: 28, margin: '0 0 6px' }}>心理资源导航</h1>
       <p style={{ color: 'var(--muted)', fontSize: 16, margin: '0 0 24px', maxWidth: 680 }}>
         聚合全球优质心理学网站，按类型、国家与语言筛选。点击任意卡片直达原站。

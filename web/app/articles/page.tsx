@@ -1,6 +1,7 @@
 import type { Metadata } from 'next';
 import Link from 'next/link';
 import { getArticles } from '@/lib/api';
+import { breadcrumbJsonLd, itemListJsonLd, JsonLdScript } from '@/lib/jsonld';
 
 export const dynamic = 'force-dynamic';
 
@@ -30,6 +31,21 @@ export default async function ArticlesPage({
 
   return (
     <div className="container-page" style={{ padding: '32px 20px 48px' }}>
+      <JsonLdScript
+        data={breadcrumbJsonLd([
+          { name: '首页', url: '/' },
+          { name: '心理资讯', url: '/articles' },
+        ])}
+      />
+      <JsonLdScript
+        data={itemListJsonLd(
+          articles.map((a) => ({
+            name: a.title,
+            url: `/articles/${a.slug}`,
+            description: a.excerpt ?? undefined,
+          })),
+        )}
+      />
       <h1 style={{ fontSize: 28, margin: '0 0 6px' }}>心理资讯</h1>
       <p style={{ color: 'var(--muted)', fontSize: 16, margin: '0 0 20px', maxWidth: 680 }}>
         原创与引用的心理学科普、研究解读与求助资源汇总。所有内容均标注来源，并附「仅供参考」声明。

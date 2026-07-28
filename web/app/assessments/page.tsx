@@ -1,6 +1,7 @@
 import type { Metadata } from 'next';
 import Link from 'next/link';
 import { getAssessments } from '@/lib/api';
+import { breadcrumbJsonLd, itemListJsonLd, JsonLdScript } from '@/lib/jsonld';
 
 export const dynamic = 'force-dynamic';
 
@@ -26,6 +27,21 @@ export default async function AssessmentsPage() {
 
   return (
     <div className="container-page" style={{ padding: '32px 20px 48px' }}>
+      <JsonLdScript
+        data={breadcrumbJsonLd([
+          { name: '首页', url: '/' },
+          { name: '心理测评', url: '/assessments' },
+        ])}
+      />
+      <JsonLdScript
+        data={itemListJsonLd(
+          assessments.map((a) => ({
+            name: a.title,
+            url: `/assessments/${a.slug}`,
+            description: a.description ?? undefined,
+          })),
+        )}
+      />
       <h1 style={{ fontSize: 28, margin: '0 0 6px' }}>心理测评</h1>
       <p style={{ color: 'var(--muted)', fontSize: 16, margin: '0 0 24px', maxWidth: 680 }}>
         以下测评使用公共领域 / 授权公开的权威量表，全部免费、匿名、即时出分。

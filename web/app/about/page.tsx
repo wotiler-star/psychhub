@@ -1,4 +1,5 @@
 import type { Metadata } from 'next';
+import { faqJsonLd, JsonLdScript } from '@/lib/jsonld';
 
 export const metadata: Metadata = {
   title: '关于我们 | 心理资源聚合',
@@ -6,6 +7,29 @@ export const metadata: Metadata = {
     '心理资源聚合是一个中文心理学资源导航平台，目标是用统一分类帮用户快速找到可靠的全球心理资源与求助渠道。我们不做在线诊疗。',
   alternates: { canonical: '/about' },
 };
+
+const FAQ = [
+  {
+    q: '心理资源聚合是什么？',
+    a: '心理资源聚合是一个独立的中文心理学资源导航与科普平台。我们聚合全球优质心理网站、公益求助热线和公开版权测评，帮助用户在 3 次点击内找到可靠的心理资源。',
+  },
+  {
+    q: '你们提供在线诊疗或心理咨询吗？',
+    a: '不提供。本站仅做信息聚合与转介，不参与任何诊断、治疗或咨询。涉及诊断与治疗，请务必咨询持证心理专业人士或医疗机构。',
+  },
+  {
+    q: '平台的测评准确吗？能代替诊断吗？',
+    a: '测评使用公共领域权威量表（如 PHQ-9、GAD-7）自动计分，结果仅用于自我觉察参考，不构成医学诊断。如有疑虑，请咨询专业心理人员。',
+  },
+  {
+    q: '我的数据会被收集吗？',
+    a: '测评免费、匿名，不收集可识别个人身份的信息。账号类功能仅用于本地体验与演示，详见隐私政策。',
+  },
+  {
+    q: '遇到心理危机时该怎么办？',
+    a: '请立即前往「求助资源」页面拨打公益心理危机干预热线，或在紧急情况下联系当地急救（如 120 / 110）。你并不孤单，求助是勇敢的选择。',
+  },
+];
 
 export default function AboutPage() {
   return (
@@ -48,6 +72,22 @@ export default function AboutPage() {
           请立即使用<a href="/helplines" style={{ color: 'var(--danger)' }}>求助资源</a>中的热线。
         </p>
       </section>
+
+      <section style={{ marginTop: 28 }}>
+        <h2 style={{ fontSize: 20 }}>常见问题</h2>
+        <div style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
+          {FAQ.map((f) => (
+            <div key={f.q}>
+              <strong style={{ fontSize: 16 }}>{f.q}</strong>
+              <p style={{ color: 'var(--muted)', fontSize: 15, margin: '6px 0 0', lineHeight: 1.8 }}>
+                {f.a}
+              </p>
+            </div>
+          ))}
+        </div>
+      </section>
+
+      <JsonLdScript data={faqJsonLd(FAQ)} />
     </div>
   );
 }

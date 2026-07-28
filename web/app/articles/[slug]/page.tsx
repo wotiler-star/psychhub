@@ -3,6 +3,7 @@ import Link from 'next/link';
 import { getArticle, getArticles } from '@/lib/api';
 import { ogImageUrl } from '@/lib/og';
 import ShareBar from '@/components/ShareBar';
+import { SITE_URL, breadcrumbJsonLd, JsonLdScript } from '@/lib/jsonld';
 
 export const dynamic = 'force-dynamic';
 
@@ -131,7 +132,7 @@ export default async function ArticleDetailPage({
     '@type': 'Article',
     headline: article.title,
     description: article.excerpt || article.title,
-    image: `https://psych-hub.example.com${ogImageUrl({
+    image: `${SITE_URL}${ogImageUrl({
       title: article.title,
       subtitle: article.excerpt || undefined,
       tag: CATEGORY_LABEL[article.category ?? ''] ?? '心理资讯',
@@ -141,9 +142,9 @@ export default async function ArticleDetailPage({
     publisher: {
       '@type': 'Organization',
       name: '心理资源聚合',
-      url: 'https://psych-hub.example.com',
+      url: SITE_URL,
     },
-    mainEntityOfPage: `https://psych-hub.example.com/articles/${article.slug}`,
+    mainEntityOfPage: `${SITE_URL}/articles/${article.slug}`,
     ...(article.sourceUrl ? { isBasedOn: article.sourceUrl } : {}),
   };
 
@@ -152,6 +153,13 @@ export default async function ArticleDetailPage({
       <script
         type="application/ld+json"
         dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd) }}
+      />
+      <JsonLdScript
+        data={breadcrumbJsonLd([
+          { name: '首页', url: '/' },
+          { name: '心理资讯', url: '/articles' },
+          { name: article.title, url: `/articles/${article.slug}` },
+        ])}
       />
 
       <div style={{ fontSize: 13, color: 'var(--brand)', fontWeight: 700 }}>

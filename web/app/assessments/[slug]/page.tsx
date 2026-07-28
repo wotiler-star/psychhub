@@ -4,6 +4,7 @@ import { getAssessment } from '@/lib/api';
 import AssessmentQuiz from '@/components/AssessmentQuiz';
 import type { AssessmentQuestion, AssessmentBand } from '@/lib/types';
 import { ogImageUrl } from '@/lib/og';
+import { breadcrumbJsonLd, JsonLdScript } from '@/lib/jsonld';
 
 export const dynamic = 'force-dynamic';
 
@@ -76,6 +77,13 @@ export default async function AssessmentDetail({
 
   return (
     <div className="container-page" style={{ padding: '32px 20px 48px', maxWidth: 760 }}>
+      <JsonLdScript
+        data={breadcrumbJsonLd([
+          { name: '首页', url: '/' },
+          { name: '心理测评', url: '/assessments' },
+          { name: assessment.title, url: `/assessments/${assessment.slug}` },
+        ])}
+      />
       <h1 style={{ fontSize: 28, margin: '0 0 8px' }}>{assessment.title}</h1>
       <p style={{ color: 'var(--muted)', fontSize: 16, margin: '0 0 8px', lineHeight: 1.7 }}>
         {assessment.description}

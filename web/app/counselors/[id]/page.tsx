@@ -5,6 +5,7 @@ import { getCounselor, getCounselorReviews } from '@/lib/api';
 import type { Counselor, Review } from '@/lib/types';
 import ReviewForm from '@/components/ReviewForm';
 import { ogImageUrl } from '@/lib/og';
+import { breadcrumbJsonLd, JsonLdScript } from '@/lib/jsonld';
 
 export const dynamic = 'force-dynamic';
 
@@ -195,6 +196,13 @@ export default async function CounselorDetail({
       </section>
 
       <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd) }} />
+      <JsonLdScript
+        data={breadcrumbJsonLd([
+          { name: '首页', url: '/' },
+          { name: '找心理咨询师', url: '/counselors' },
+          { name: c.name, url: `/counselors/${c.id}` },
+        ])}
+      />
     </div>
   );
 }

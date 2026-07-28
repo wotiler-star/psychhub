@@ -3,6 +3,7 @@ import Link from 'next/link';
 import { getCounselors } from '@/lib/api';
 import type { Counselor } from '@/lib/types';
 import CounselorFilters from '@/components/CounselorFilters';
+import { breadcrumbJsonLd, itemListJsonLd, JsonLdScript } from '@/lib/jsonld';
 
 export const dynamic = 'force-dynamic';
 
@@ -65,6 +66,21 @@ export default async function CounselorsPage({
 
   return (
     <div className="container-page" style={{ padding: '32px 20px 48px' }}>
+      <JsonLdScript
+        data={breadcrumbJsonLd([
+          { name: '首页', url: '/' },
+          { name: '找心理咨询师', url: '/counselors' },
+        ])}
+      />
+      <JsonLdScript
+        data={itemListJsonLd(
+          list.map((c) => ({
+            name: c.name,
+            url: `/counselors/${c.id}`,
+            description: [c.title, ...c.specialties].filter(Boolean).join(' · '),
+          })),
+        )}
+      />
       <h1 style={{ fontSize: 28, margin: '0 0 6px' }}>找心理咨询师</h1>
       <p style={{ color: 'var(--muted)', fontSize: 16, margin: '0 0 24px', maxWidth: 720, lineHeight: 1.7 }}>
         按擅长议题、地区与价格筛选咨询师与执业者。
