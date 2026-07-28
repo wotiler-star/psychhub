@@ -1,16 +1,35 @@
 import type { Metadata } from 'next';
 import Link from 'next/link';
 import { getArticles } from '@/lib/api';
+import Pager from '@/components/Pager';
 import { breadcrumbJsonLd, itemListJsonLd, JsonLdScript } from '@/lib/jsonld';
+import { paginate, withPagination } from '@/lib/paginate';
 
 export const dynamic = 'force-dynamic';
 
-export const metadata: Metadata = {
-  title: '心理资讯 | 科普 · 研究 · 求助资源',
-  description:
-    '聚合原创与引用的心理学科普、研究解读与求助资源，帮助你在信息洪流中快速获取可信内容。所有内容标注来源，附「仅供参考」声明。',
-  alternates: { canonical: '/articles' },
-};
+export async function generateMetadata({
+  searchParams,
+}: {
+  searchParams: Promise<{ category?: string; tag?: string; page?: string }>;
+}): Promise<Metadata> {
+  const { category, tag, page: pageStr } = await searchParams;
+  const page = Number(pageStr) || 1;
+  const all = await getArticles(category ? { category } : {}).catch(() => []);
+  const total = tag ? all.filter((a) => a.tags.includes(tag)).length : all.length;
+  return withPagination(
+    {
+      title: '心理资讯 | 科普 · 研究 · 求助资源',
+      description:
+        '聚合原创与引用的心理学科普、研究解读与求助资源，帮助你在信息洪流中快速获取可信内容。所有内容标注来源，附「仅供参考」声明。',
+      alternates: { canonical: '/articles' },
+    },
+    '/articles',
+    { category, tag },
+    page,
+    total,
+    9,
+  );
+}
 
 const CATEGORY_LABEL: Record<string, string> = {
   POPSCI: '科普',
@@ -23,11 +42,13 @@ const CATS = ['POPSCI', 'RESEARCH', 'NEWS'];
 export default async function ArticlesPage({
   searchParams,
 }: {
-  searchParams: Promise<{ category?: string; tag?: string }>;
+  searchParams: Promise<{ category?: string; tag?: string; page?: string }>;
 }) {
-  const { category, tag } = await searchParams;
+  const { category, tag, page: pageStr } = await searchParams;
   const all = await getArticles(category ? { category } : {}).catch(() => []);
   const articles = tag ? all.filter((a) => a.tags.includes(tag)) : all;
+  const page = Number(pageStr) || 1;
+  const { pageItems, totalPages } = paginate(articles, page, 9);
 
   return (
     <div className="container-page" style={{ padding: '32px 20px 48px' }}>
@@ -85,7 +106,7 @@ export default async function ArticlesPage({
       )}
 
       <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(300px, 1fr))', gap: 16 }}>
-        {articles.map((a) => (
+        {pageItems.map((a) => (
           <Link key={a.id} href={`/articles/${a.slug}`} className="card" style={{ color: 'var(--ink)', textDecoration: 'none' }}>
             <div style={{ fontSize: 13, color: 'var(--brand)', fontWeight: 700 }}>
               {a.category ? (CATEGORY_LABEL[a.category] ?? a.category) : '资讯'}
@@ -105,6 +126,8 @@ export default async function ArticlesPage({
           </Link>
         ))}
       </div>
+
+      <Pager basePath="/articles" params={{ category, tag }} page={page} totalPages={totalPages} />
 
       {articles.length === 0 && (
         <div className="card" style={{ textAlign: 'center', color: 'var(--muted)' }}>

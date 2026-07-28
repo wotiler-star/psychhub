@@ -2,16 +2,40 @@ import type { Metadata } from 'next';
 import { getResources } from '@/lib/api';
 import ResourceCard from '@/components/ResourceCard';
 import ResourceFilters from '@/components/ResourceFilters';
+import Pager from '@/components/Pager';
 import { breadcrumbJsonLd, JsonLdScript } from '@/lib/jsonld';
+import { paginate, withPagination } from '@/lib/paginate';
 
 export const dynamic = 'force-dynamic';
 
-export const metadata: Metadata = {
-  title: '资源导航 | 全球心理学网站目录',
-  description:
-    '按类型、国家、语言筛选全球优质心理学网站：内容媒体、执业 SaaS、在线咨询、公益组织、测评工具、冥想自助与学术教育资源。',
-  alternates: { canonical: '/resources' },
-};
+export async function generateMetadata({
+  searchParams,
+}: {
+  searchParams: Promise<SP>;
+}): Promise<Metadata> {
+  const sp = await searchParams;
+  const page = Number(sp.page) || 1;
+  const resources = await getResources({
+    q: sp.q,
+    type: sp.type,
+    country: sp.country,
+    language: sp.language,
+    tag: sp.tag,
+  }).catch(() => []);
+  return withPagination(
+    {
+      title: '资源导航 | 全球心理学网站目录',
+      description:
+        '按类型、国家、语言筛选全球优质心理学网站：内容媒体、执业 SaaS、在线咨询、公益组织、测评工具、冥想自助与学术教育资源。',
+      alternates: { canonical: '/resources' },
+    },
+    '/resources',
+    sp,
+    page,
+    resources.length,
+    12,
+  );
+}
 
 interface SP {
   q?: string;
@@ -20,6 +44,8 @@ interface SP {
   language?: string;
   tag?: string;
   sort?: string;
+  page?: string;
+  [key: string]: string | undefined;
 }
 
 // 将资源 trafficLevel（混合「高/中」与「X万/月」）归一为可比较的热度分，用于排序
@@ -60,6 +86,9 @@ export default async function ResourcesPage({
         ? [...raw].sort((a, b) => a.name.localeCompare(b.name))
         : raw;
 
+  const page = Number(sp.page) || 1;
+  const { pageItems, totalPages } = paginate(resources, page, 12);
+
   // 国家 / 语言选项从数据派生（用于筛选器下拉）
   const countries = Array.from(
     new Set(resources.map((r) => r.country).filter((c): c is string => !!c)),
@@ -89,7 +118,7 @@ export default async function ResourcesPage({
         {sp.type || sp.country || sp.language || sp.tag || sp.q ? '（已按筛选条件）' : ''}
       </div>
 
-      {resources.length === 0 ? (
+      {pageItems.length === 0 ? (
         <div className="card" style={{ textAlign: 'center', color: 'var(--muted)' }}>
           没有匹配的资源。试试清除筛选条件，或使用顶部搜索。
         </div>
@@ -101,11 +130,13 @@ export default async function ResourcesPage({
             gap: 16,
           }}
         >
-          {resources.map((r) => (
+          {pageItems.map((r) => (
             <ResourceCard key={r.id} resource={r} />
           ))}
         </div>
       )}
+
+      <Pager basePath="/resources" params={sp} page={page} totalPages={totalPages} />
     </div>
   );
 }

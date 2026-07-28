@@ -61,6 +61,8 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
         />
         {/* GEO 发现：供 AI / LLM 爬虫定位站点摘要 */}
         <link rel="alternate" type="text/plain" href="/llms.txt" title="llms.txt" />
+        {/* RSS 订阅源发现 */}
+        <link rel="alternate" type="application/rss+xml" href="/rss.xml" title="RSS Feed" />
       </head>
       <body style={{ margin: 0, minHeight: '100vh', display: 'flex', flexDirection: 'column' }}>
         <AuthProvider>

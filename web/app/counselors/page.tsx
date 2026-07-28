@@ -3,16 +3,40 @@ import Link from 'next/link';
 import { getCounselors } from '@/lib/api';
 import type { Counselor } from '@/lib/types';
 import CounselorFilters from '@/components/CounselorFilters';
+import Pager from '@/components/Pager';
 import { breadcrumbJsonLd, itemListJsonLd, JsonLdScript } from '@/lib/jsonld';
+import { paginate, withPagination } from '@/lib/paginate';
 
 export const dynamic = 'force-dynamic';
 
-export const metadata: Metadata = {
-  title: '找心理咨询师 | 聚合推荐与转介',
-  description:
-    '按擅长议题、地区与价格筛选心理咨询师与执业者。本平台仅做信息聚合与转介，不构成诊疗建议；紧急情况请优先拨打危机干预热线。',
-  alternates: { canonical: '/counselors' },
-};
+export async function generateMetadata({
+  searchParams,
+}: {
+  searchParams: Promise<SP>;
+}): Promise<Metadata> {
+  const sp = await searchParams;
+  const page = Number(sp.page) || 1;
+  const query = {
+    specialty: sp.specialty,
+    region: sp.region,
+    maxPrice: sp.maxPrice ? Number(sp.maxPrice) : undefined,
+    remote: sp.remote === '1' ? true : undefined,
+  };
+  const filtered = await getCounselors(query).catch(() => [] as Counselor[]);
+  return withPagination(
+    {
+      title: '找心理咨询师 | 聚合推荐与转介',
+      description:
+        '按擅长议题、地区与价格筛选心理咨询师与执业者。本平台仅做信息聚合与转介，不构成诊疗建议；紧急情况请优先拨打危机干预热线。',
+      alternates: { canonical: '/counselors' },
+    },
+    '/counselors',
+    sp,
+    page,
+    filtered.length,
+    9,
+  );
+}
 
 interface SP {
   specialty?: string;
@@ -20,6 +44,8 @@ interface SP {
   maxPrice?: string;
   remote?: string;
   sort?: string;
+  page?: string;
+  [key: string]: string | undefined;
 }
 
 export default async function CounselorsPage({
@@ -64,6 +90,9 @@ export default async function CounselorsPage({
     return Number(!!b.featured) - Number(!!a.featured);
   });
 
+  const page = Number(sp.page) || 1;
+  const { pageItems, totalPages } = paginate(list, page, 9);
+
   return (
     <div className="container-page" style={{ padding: '32px 20px 48px' }}>
       <JsonLdScript
@@ -96,7 +125,7 @@ export default async function CounselorsPage({
       </div>
 
       <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(320px, 1fr))', gap: 16 }}>
-        {list.map((c) => (
+        {pageItems.map((c) => (
           <Link
             key={c.id}
             href={`/counselors/${c.id}`}
@@ -146,8 +175,10 @@ export default async function CounselorsPage({
               </p>
             )}
           </Link>
-        ))}
+        )        )}
       </div>
+
+      <Pager basePath="/counselors" params={sp} page={page} totalPages={totalPages} />
 
       {list.length === 0 && (
         <div className="card" style={{ textAlign: 'center', color: 'var(--muted)' }}>

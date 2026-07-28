@@ -1,5 +1,5 @@
 import type { MetadataRoute } from 'next';
-import { getArticles, getCounselors, getAssessments } from '@/lib/api';
+import { getArticles, getCounselors, getAssessments, getResources } from '@/lib/api';
 
 export const dynamic = 'force-dynamic';
 
@@ -15,6 +15,7 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
     '/articles',
     '/counselors',
     '/community',
+    '/tags',
     '/about',
     '/submit',
     '/privacy',
@@ -27,11 +28,22 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
   }));
 
   try {
-    const [articles, counselors, assessments] = await Promise.all([
+    const [articles, counselors, assessments, resources] = await Promise.all([
       getArticles().catch(() => []),
       getCounselors().catch(() => []),
       getAssessments().catch(() => []),
+      getResources().catch(() => []),
     ]);
+    const tagSet = new Set<string>();
+    articles.forEach((a) => a.tags.forEach((t) => tagSet.add(t)));
+    resources.forEach((r) => r.tags.forEach((t) => tagSet.add(t)));
+    counselors.forEach((c) => c.tags.forEach((t) => tagSet.add(t)));
+    const tagRoutes: MetadataRoute.Sitemap = Array.from(tagSet).map((t) => ({
+      url: `${SITE_URL}/tags/${encodeURIComponent(t)}`,
+      lastModified: now,
+      changeFrequency: 'weekly' as const,
+      priority: 0.5,
+    }));
     const detailRoutes: MetadataRoute.Sitemap = [
       ...articles.map((a) => ({
         url: `${SITE_URL}/articles/${a.slug}`,
@@ -51,6 +63,7 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
         changeFrequency: 'monthly' as const,
         priority: 0.6,
       })),
+      ...tagRoutes,
     ];
     return [...base, ...detailRoutes];
   } catch {

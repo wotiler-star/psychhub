@@ -1,16 +1,34 @@
 import type { Metadata } from 'next';
 import Link from 'next/link';
 import { getAssessments } from '@/lib/api';
+import Pager from '@/components/Pager';
 import { breadcrumbJsonLd, itemListJsonLd, JsonLdScript } from '@/lib/jsonld';
+import { paginate, withPagination } from '@/lib/paginate';
 
 export const dynamic = 'force-dynamic';
 
-export const metadata: Metadata = {
-  title: '心理测评 | PHQ-9 / GAD-7 免费自测',
-  description:
-    '使用公共领域权威量表（PHQ-9 抑郁、GAD-7 焦虑）进行免费自评，即时计分与分级解读。结果仅供参考，不构成诊断。',
-  alternates: { canonical: '/assessments' },
-};
+export async function generateMetadata({
+  searchParams,
+}: {
+  searchParams: Promise<{ page?: string }>;
+}): Promise<Metadata> {
+  const { page: pageStr } = await searchParams;
+  const page = Number(pageStr) || 1;
+  const assessments = await getAssessments().catch(() => []);
+  return withPagination(
+    {
+      title: '心理测评 | PHQ-9 / GAD-7 免费自测',
+      description:
+        '使用公共领域权威量表（PHQ-9 抑郁、GAD-7 焦虑）进行免费自评，即时计分与分级解读。结果仅供参考，不构成诊断。',
+      alternates: { canonical: '/assessments' },
+    },
+    '/assessments',
+    {},
+    page,
+    assessments.length,
+    6,
+  );
+}
 
 const TYPE_LABEL: Record<string, string> = {
   DEPRESSION: '抑郁筛查',
@@ -22,8 +40,15 @@ const TYPE_LABEL: Record<string, string> = {
   PERSONALITY: '人格测评',
 };
 
-export default async function AssessmentsPage() {
+export default async function AssessmentsPage({
+  searchParams,
+}: {
+  searchParams: Promise<{ page?: string }>;
+}) {
+  const { page: pageStr } = await searchParams;
+  const page = Number(pageStr) || 1;
   const assessments = await getAssessments().catch(() => []);
+  const { pageItems, totalPages } = paginate(assessments, page, 6);
 
   return (
     <div className="container-page" style={{ padding: '32px 20px 48px' }}>
@@ -49,7 +74,7 @@ export default async function AssessmentsPage() {
       </p>
 
       <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(300px, 1fr))', gap: 16 }}>
-        {assessments.map((a) => (
+        {pageItems.map((a) => (
           <Link key={a.id} href={`/assessments/${a.slug}`} className="card" style={{ color: 'var(--ink)', textDecoration: 'none' }}>
             <div style={{ fontSize: 13, color: 'var(--brand)', fontWeight: 700 }}>
               {a.type ? (TYPE_LABEL[a.type] ?? a.type) : '测评'}
@@ -65,6 +90,8 @@ export default async function AssessmentsPage() {
           </Link>
         ))}
       </div>
+
+      <Pager basePath="/assessments" params={{}} page={page} totalPages={totalPages} />
 
       {assessments.length === 0 && (
         <div className="card" style={{ textAlign: 'center', color: 'var(--muted)' }}>

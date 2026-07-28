@@ -3,6 +3,7 @@ import Link from 'next/link';
 import { getArticle, getArticles } from '@/lib/api';
 import { ogImageUrl } from '@/lib/og';
 import ShareBar from '@/components/ShareBar';
+import ArticleFeedback from '@/components/ArticleFeedback';
 import { SITE_URL, breadcrumbJsonLd, JsonLdScript } from '@/lib/jsonld';
 
 export const dynamic = 'force-dynamic';
@@ -262,6 +263,8 @@ export default async function ArticleDetailPage({
         ⚠ 本文内容仅供心理健康科普与自我觉察参考，<strong>不构成医学诊断或治疗建议</strong>。如有持续困扰，请使用本站「求助资源」中的专业热线。
       </div>
 
+      <ArticleFeedback slug={article.slug} />
+
       {related.length > 0 && (
         <div style={{ marginTop: 36, borderTop: '1px solid #e5e7eb', paddingTop: 24 }}>
           <h2 style={{ fontSize: 20, margin: '0 0 16px' }}>相关阅读</h2>
@@ -286,6 +289,18 @@ export default async function ArticleDetailPage({
                   {a.title}
                 </div>
                 <div style={{ fontSize: 12, color: 'var(--muted)' }}>{a.publishedAt}</div>
+              </Link>
+            ))}
+          </div>
+          <div style={{ marginTop: 16, fontSize: 13, color: 'var(--muted)' }}>
+            按标签浏览更多：
+            {article.tags.map((t) => (
+              <Link
+                key={t}
+                href={`/tags/${encodeURIComponent(t)}`}
+                style={{ color: 'var(--brand)', marginLeft: 8, textDecoration: 'none' }}
+              >
+                #{t}
               </Link>
             ))}
           </div>
