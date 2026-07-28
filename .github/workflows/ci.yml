@@ -1,0 +1,89 @@
+# 全栈 CI：push / PR 时自动构建 + 测试
+# 分为两个独立 job：
+#   - backend：nest build + jest（Prisma 用内存 Mock，无需外部 PostgreSQL）
+#   - frontend：next build + vitest 组件/单元测试（无需后端，页面均为 force-dynamic）
+# 运行环境：GitHub Actions ubuntu-latest
+name: CI
+
+on:
+  push:
+    branches: [main, master, dev]
+    paths:
+      - 'backend/**'
+      - 'web/**'
+      - '.github/**'
+  pull_request:
+    branches: [main, master]
+    paths:
+      - 'backend/**'
+      - 'web/**'
+      - '.github/**'
+
+# 同一分支并发推送时取消旧运行，节省 CI 资源
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  backend:
+    name: Backend build & test
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: backend
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: npm
+          cache-dependency-path: backend/package-lock.json
+
+      - name: Install dependencies (npm ci)
+        run: npm ci
+
+      - name: Generate Prisma client
+        # @prisma/client 必须先从 schema 生成，否则 nest build / jest import AppModule 会失败
+        run: npx prisma generate
+
+      - name: Build (nest build)
+        run: npm run build
+
+      - name: Test (jest)
+        run: npm test
+        env:
+          JWT_SECRET: ci-test-secret-change-me
+          DATABASE_URL: postgresql://u:p@127.0.0.1:1/psychhub_test
+          NODE_ENV: test
+
+  frontend:
+    name: Frontend build & test
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: web
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: npm
+          cache-dependency-path: web/package-lock.json
+
+      - name: Install dependencies (npm ci)
+        run: npm ci
+
+      - name: Build (next build)
+        # 所有数据页均为 force-dynamic + no-store，构建期不会请求后端，可离线通过
+        run: npm run build
+        env:
+          NEXT_PUBLIC_API_BASE: http://localhost:3001
+
+      - name: Component & unit tests (vitest)
+        run: npm test
