@@ -179,6 +179,27 @@ export default function Header() {
           >
             ⌘K
           </button>
+          <Link
+            href="/saved"
+            aria-label="我的收藏"
+            title="我的收藏"
+            style={{
+              display: 'inline-flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+              minHeight: 36,
+              minWidth: 36,
+              borderRadius: 8,
+              border: '1px solid var(--line)',
+              background: 'var(--card)',
+              color: 'var(--muted)',
+              marginLeft: 4,
+              fontSize: 16,
+              textDecoration: 'none',
+            }}
+          >
+            ★
+          </Link>
           <button
             type="button"
             className="theme-toggle"

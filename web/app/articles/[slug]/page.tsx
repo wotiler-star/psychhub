@@ -4,6 +4,9 @@ import { getArticle, getArticles } from '@/lib/api';
 import { ogImageUrl } from '@/lib/og';
 import ShareBar from '@/components/ShareBar';
 import ArticleFeedback from '@/components/ArticleFeedback';
+import BookmarkButton from '@/components/BookmarkButton';
+import ArticleToc from '@/components/ArticleToc';
+import ReadingProgress from '@/components/ReadingProgress';
 import { SITE_URL, breadcrumbJsonLd, JsonLdScript } from '@/lib/jsonld';
 
 export const dynamic = 'force-dynamic';
@@ -15,19 +18,34 @@ const CATEGORY_LABEL: Record<string, string> = {
 };
 
 // 轻量内容解析：把种子里的纯文本按段落 / 编号条目 / 列表项拆成结构化块，
-// 让「1. 2. 3.」渲染为真正的有序列表，普通文本渲染为段落。
+// 让「1. 2. 3.」渲染为真正的有序列表，普通文本渲染为段落；
+// 并支持 Markdown 二级/三级标题（## / ###）作为文章目录锚点。
 type Block =
   | { type: 'p'; text: string }
   | { type: 'ol'; items: string[] }
-  | { type: 'ul'; items: string[] };
+  | { type: 'ul'; items: string[] }
+  | { type: 'h'; level: 2 | 3; text: string; id: string };
 
 function parseContent(content: string): Block[] {
   const lines = content.split('\n');
   const blocks: Block[] = [];
   let cur: Block | null = null;
+  let headingSeq = 0;
   for (const raw of lines) {
     const line = raw.trim();
     if (!line) {
+      cur = null;
+      continue;
+    }
+    const heading = line.match(/^(#{2,3})\s+(.+)$/);
+    if (heading) {
+      headingSeq += 1;
+      blocks.push({
+        type: 'h',
+        level: heading[1].length === 2 ? 2 : 3,
+        text: heading[2].trim(),
+        id: `h${headingSeq}`,
+      });
       cur = null;
       continue;
     }
@@ -114,6 +132,9 @@ export default async function ArticleDetailPage({
   }
 
   const blocks = parseContent(article.content);
+  const headings = blocks
+    .filter((b): b is Extract<Block, { type: 'h' }> => b.type === 'h')
+    .map((b) => ({ id: b.id, text: b.text, level: b.level }));
 
   // 相关阅读：按标签重合度 + 同类目加权排序，取前 3 篇（排除当前）
   const all = await getArticles().catch(() => []);
@@ -163,6 +184,8 @@ export default async function ArticleDetailPage({
         ])}
       />
 
+      <ReadingProgress />
+
       <div style={{ fontSize: 13, color: 'var(--brand)', fontWeight: 700 }}>
         {article.category ? (CATEGORY_LABEL[article.category] ?? article.category) : '资讯'}
       </div>
@@ -200,7 +223,7 @@ export default async function ArticleDetailPage({
         )}
       </div>
 
-      <div style={{ margin: '10px 0 14px' }}>
+      <div style={{ margin: '10px 0 14px', display: 'flex', alignItems: 'center', gap: 10, flexWrap: 'wrap' }}>
         <ShareBar
           title={article.title}
           ogImage={ogImageUrl({
@@ -208,6 +231,13 @@ export default async function ArticleDetailPage({
             subtitle: article.excerpt || undefined,
             tag: CATEGORY_LABEL[article.category ?? ''] ?? '心理资讯',
           })}
+        />
+        <BookmarkButton
+          type="article"
+          id={article.slug}
+          title={article.title}
+          url={`/articles/${article.slug}`}
+          subtitle={article.excerpt ?? undefined}
         />
       </div>
 
@@ -224,8 +254,22 @@ export default async function ArticleDetailPage({
         ))}
       </div>
 
+      {headings.length > 0 && <ArticleToc headings={headings} />}
+
       <div style={{ fontSize: 16, lineHeight: 1.9, color: 'var(--ink)' }}>
         {blocks.map((b, i) => {
+          if (b.type === 'h') {
+            const Heading = (b.level === 2 ? 'h2' : 'h3') as 'h2' | 'h3';
+            return (
+              <Heading
+                key={i}
+                id={b.id}
+                style={{ fontSize: b.level === 2 ? 22 : 18, margin: '26px 0 10px', scrollMarginTop: 80 }}
+              >
+                {b.text}
+              </Heading>
+            );
+          }
           if (b.type === 'p') {
             return (
               <p key={i} style={{ margin: '0 0 16px' }}>

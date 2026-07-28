@@ -4,6 +4,7 @@ import Link from 'next/link';
 import { getCounselor, getCounselorReviews } from '@/lib/api';
 import type { Counselor, Review } from '@/lib/types';
 import ReviewForm from '@/components/ReviewForm';
+import BookmarkButton from '@/components/BookmarkButton';
 import { ogImageUrl } from '@/lib/og';
 import { breadcrumbJsonLd, JsonLdScript } from '@/lib/jsonld';
 
@@ -100,6 +101,13 @@ export default async function CounselorDetail({
             前往预约 ↗
           </a>
         )}
+        <BookmarkButton
+          type="counselor"
+          id={c.id}
+          title={`${c.name}${c.title ? ' · ' + c.title : ''}`}
+          url={`/counselors/${c.id}`}
+          subtitle={c.specialties.join('、')}
+        />
       </div>
 
       <div
