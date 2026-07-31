@@ -467,3 +467,47 @@ module.exports = {
 4. **2G 内存机需限制堆**：`--max-old-space-size` 分别给 384 / 128 MB，否则与既有站点争抢内存。
 5. 端口 80 / 3000 常已被宝塔面板或其他站点占用，先 `netstat` 探测再选端口；并且要同时放通 **系统防火墙**（`New-NetFirewallRule`）和 **轻量云防火墙**（`CreateFirewallRules`），两者缺一不可。
 6. 开机自启：`pm2 save` + 注册 `AtStartup` 计划任务执行 `pm2 resurrect`（Windows 上 pm2 无 `startup` 子命令）。
+7. **TAT 以 SYSTEM 身份执行，PATH 里没有 node** —— 直接调 `pm2.cmd` 会报 `'"node"' is not recognized`，而 PowerShell 不因此中断，于是 `pm2 restart` **静默失败**：页面仍返回 200（旧进程还活着），让人误以为部署成功。正确写法是脚本头固定加上：
+
+   ```powershell
+   $env:PM2_HOME = "C:\Users\Administrator\.pm2"
+   $env:Path = "C:\Program Files\nodejs;" + $env:Path
+   $nodeExe = "C:\Program Files\nodejs\node.exe"
+   $pm2js   = "C:\Users\Administrator\AppData\Roaming\npm\node_modules\pm2\bin\pm2"
+   function Pm2($a) { & $nodeExe $pm2js @a 2>&1 | Out-String }
+   ```
+
+8. **更新目录前必须先停进程** —— Windows 会锁住运行中的 `server.js`，`Remove-Item -Recurse -Force` 只会**部分**成功且不报错；随后 `Move-Item` 发现目标目录仍存在，就把内容嵌套成 `web\web\server.js`，下次重启即 `MODULE_NOT_FOUND` 崩溃循环。
+   正确顺序：**解压到临时目录 → `pm2 delete` → 删目标目录并校验 `Test-Path` 为 false → `Move-Item` → 校验 `server.js` 存在 → `pm2 start`**。
+9. **`pm2 list` 输出带颜色与框线字符**，直接 `Add-Content` 进日志会变成乱码。日志只记结论（判断 `$LASTEXITCODE`），用 `*> $null` 丢弃 pm2 原始输出。
+
+### 一键重新部署
+
+`scripts/deploy-tencent.py` 把整条链路固化成一条命令：
+
+```bash
+export TC_SID=xxx TC_SKEY=yyy
+
+python scripts/deploy-tencent.py                # 构建 + 上传 + 部署 + 公网验证
+python scripts/deploy-tencent.py --skip-build   # 复用 _dist 里的产物，约 85 秒
+python scripts/deploy-tencent.py --verify-only  # 只跑 13 个页面的公网验证
+```
+
+脚本内置了第 7、8 条的规避逻辑，任一步骤产物缺失会直接 `throw`，不会出现「假成功」。
+
+### 运维加固（已在服务器上生效）
+
+| 项 | 实现 |
+| --- | --- |
+| 内存护栏 | `max_memory_restart` web 480M / api 180M，配合 `--max-old-space-size` |
+| 崩溃退避 | `max_restarts: 20`、`restart_delay: 3000`、`min_uptime: 10000` |
+| 日志轮转 | `pm2-logrotate`（10M × 7 份，gzip） |
+| 健康探针 | 计划任务 `psychhub-health`，每 5 分钟探 `:3501/api/health` 与 `:3500/`，异常自动 `pm2 restart`，结果写 `C:\www\psychhub\health.log`（超 256KB 自动截尾） |
+| 开机自启 | 计划任务 `psychhub-resurrect`（At system start up / SYSTEM）执行 `C:\www\psychhub\resurrect.cmd` → `pm2 resurrect`，日志 `boot.log` |
+
+自愈已实测：手动 `pm2 stop psychhub-api` 后触发探针，8 秒内恢复：
+
+```
+2026-07-31 16:53:36  API DOWN -> restart psychhub-api (pm2 ok=True)
+2026-07-31 16:53:42  recovered? api=ok web=ok
+```
