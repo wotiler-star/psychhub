@@ -9,5 +9,8 @@ COPY prisma ./prisma
 RUN npx prisma generate
 COPY . .
 RUN npm run build
+# 最小权限：以非 root 的 node 用户运行（降低容器逃逸风险）
+RUN chown -R node:node /app
+USER node
 EXPOSE 3001
 CMD ["sh", "-c", "npx prisma migrate deploy && npx prisma db seed && node dist/main.js"]

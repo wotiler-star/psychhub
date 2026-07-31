@@ -11,12 +11,20 @@ on:
     paths:
       - 'backend/**'
       - 'web/**'
+      - 'nginx/**'
+      - 'docker-compose.yml'
+      - 'backend/Dockerfile'
+      - 'web/Dockerfile'
       - '.github/**'
   pull_request:
     branches: [main, master]
     paths:
       - 'backend/**'
       - 'web/**'
+      - 'nginx/**'
+      - 'docker-compose.yml'
+      - 'backend/Dockerfile'
+      - 'web/Dockerfile'
       - '.github/**'
 
 # 同一分支并发推送时取消旧运行，节省 CI 资源
@@ -87,3 +95,22 @@ jobs:
 
       - name: Component & unit tests (vitest)
         run: npm test
+
+  # 部署健壮性：验证两个镜像可成功构建（捕获 Dockerfile 回归 / 构建期依赖变更）
+  # 仅在 push 到受保护分支时运行，避免拖慢 PR；不推送镜像（push: false）。
+  docker-build:
+    name: Validate Docker images build
+    runs-on: ubuntu-latest
+    if: github.event_name == 'push'
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
+
+      - name: Build backend image
+        run: docker build -t psychhub-backend ./backend
+
+      - name: Build web image
+        run: docker build -t psychhub-web ./web

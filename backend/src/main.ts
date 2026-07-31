@@ -12,6 +12,27 @@ async function bootstrap() {
   // 生产环境：关闭 Swagger（缩小攻击面）+ 启用严格 CSP + 收紧 body 限制
   const isProd = process.env.NODE_ENV === 'production';
 
+  // ── 部署健壮性：生产环境 fail-fast 环境校验 ──
+  // 缺失关键配置或密钥过弱时，拒绝启动（非零退出），避免带病/不安全部署静默上线。
+  if (isProd) {
+    const missing: string[] = [];
+    for (const k of ['DATABASE_URL', 'JWT_SECRET'] as const) {
+      if (!process.env[k]) missing.push(k);
+    }
+    const secret = process.env.JWT_SECRET ?? '';
+    const weakSecret = secret.length < 16 || secret === 'change-me-in-production';
+    if (missing.length || weakSecret) {
+      console.error(
+        '[FATAL] 生产启动中止：环境变量缺失或 JWT_SECRET 不安全。',
+        JSON.stringify({ missing, weakSecret: weakSecret || undefined }),
+      );
+      process.exit(1);
+    }
+    if (!process.env.ALLOWED_ORIGINS) {
+      console.warn('[WARN] 生产环境未设置 ALLOWED_ORIGINS，将仅放行同源请求（CORS 兜底为 localhost）。');
+    }
+  }
+
   // bodyParser:false 以接管默认解析器，显式设置 1MB 上限（防超大 payload 耗尽内存）
   const app = await NestFactory.create(AppModule, { bodyParser: false });
 

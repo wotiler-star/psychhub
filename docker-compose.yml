@@ -5,6 +5,7 @@ services:
     image: postgres:16-alpine
     container_name: psych-hub-db
     restart: unless-stopped
+    init: true
     environment:
       POSTGRES_USER: ${POSTGRES_USER:-psych}
       POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-psych_pass}
@@ -18,12 +19,18 @@ services:
       interval: 10s
       timeout: 5s
       retries: 5
+      start_period: 10s
+    mem_limit: 512m
+    memswap_limit: 1024m
 
   backend:
     build:
       context: ./backend
     container_name: psych-hub-backend
     restart: unless-stopped
+    init: true
+    # 给优雅关闭留出窗口（与 main.ts 中 SIGTERM 处理匹配）
+    stop_grace_period: 30s
     depends_on:
       db:
         condition: service_healthy
@@ -43,6 +50,10 @@ services:
       interval: 15s
       timeout: 5s
       retries: 5
+      # 首次启动要跑 migrate deploy + seed，预留充足启动宽限
+      start_period: 40s
+    mem_limit: 512m
+    memswap_limit: 1024m
 
   web:
     build:
@@ -51,17 +62,33 @@ services:
         NEXT_PUBLIC_API_BASE: http://backend:3001
     container_name: psych-hub-web
     restart: unless-stopped
+    init: true
+    stop_grace_period: 30s
+    # 等后端真正健康再启动，避免冷启动阶段 SSR 请求 500
     depends_on:
-      - backend
+      backend:
+        condition: service_healthy
     environment:
       NEXT_PUBLIC_API_BASE: http://backend:3001
+      # standalone server 监听地址（0.0.0.0 以接收容器网络流量）
+      HOSTNAME: 0.0.0.0
     expose:
       - "3000"
+    healthcheck:
+      # 轻量存活探针（/healthz 不依赖 backend，只验证 web 进程存活）
+      test: ["CMD-SHELL", "wget -qO- http://localhost:3000/healthz >/dev/null 2>&1 || exit 1"]
+      interval: 15s
+      timeout: 5s
+      retries: 5
+      start_period: 20s
+    mem_limit: 512m
+    memswap_limit: 1024m
 
   nginx:
     image: nginx:1.27-alpine
     container_name: psych-hub-nginx
     restart: unless-stopped
+    init: true
     depends_on:
       - web
       - backend
@@ -70,10 +97,14 @@ services:
     volumes:
       - ./nginx/default.conf:/etc/nginx/conf.d/default.conf:ro
     healthcheck:
-      test: ["CMD-SHELL", "wget -qO- http://localhost/ >/dev/null 2>&1 || exit 1"]
+      # 改为探测 web 的轻量 /healthz，避免每次探活都触发完整 SSR
+      test: ["CMD-SHELL", "wget -qO- http://web:3000/healthz >/dev/null 2>&1 || exit 1"]
       interval: 15s
       timeout: 5s
       retries: 5
+      start_period: 20s
+    mem_limit: 128m
+    memswap_limit: 256m
 
 volumes:
   pgdata:
