@@ -9,6 +9,8 @@ build/
 .next/
 out/
 *.tsbuildinfo
+# 部署打包暂存目录（deploy 脚本生成，含 standalone 副本与 zip）
+_dist/
 
 # 环境 / 密钥（严禁入库）R6.4 / R12
 .env

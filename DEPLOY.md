@@ -404,3 +404,66 @@ cd web && NEXT_PUBLIC_API_BASE=http://localhost:3001 npm run build && npx next s
 ```
 
 详见 README「本地预览」与「本地真 NestJS 端到端联调」小节。生产部署仍走本指南的 `docker compose`。
+
+---
+
+## 附二：腾讯云轻量服务器（Windows）无 Docker 部署实录
+
+适用场景：目标机为 **Windows Server + 无 Docker + 内存紧张（2C2G）**，无法运行 `docker compose`（PostgreSQL 起不来）。
+采用「本地构建 → COS 中转 → TAT 远程执行」链路，全程无需 SSH / RDP。
+
+### 拓扑
+
+| 进程 | 端口 | 说明 |
+| --- | --- | --- |
+| `psychhub-web` | 3500 | Next.js standalone（`server.js`），SSR + `/api/*` 反代 |
+| `psychhub-api` | 3501 | 数据服务单文件（由 `backend/scripts/preview-server.ts` esbuild 打包，零依赖） |
+
+前端 `next.config.js` 的 `rewrites` 把 `/api/*` 代理到 `NEXT_PUBLIC_API_BASE`，**该值在构建期固化**，因此必须在 build 时指定服务器侧地址。
+
+### 步骤
+
+```bash
+# 1. 构建前端（构建期固化 API 地址）
+cd web && rm -rf .next
+NEXT_PUBLIC_API_BASE=http://127.0.0.1:3501 npx next build
+
+# 2. 打包数据服务为零依赖单文件（约 80KB）
+npx esbuild backend/scripts/preview-server.ts \
+  --bundle --platform=node --target=node18 --format=cjs \
+  --outfile=_dist/api/server.js
+
+# 3. 组装部署目录
+mkdir -p _dist/web && cp -r web/.next/standalone/. _dist/web/
+mkdir -p _dist/web/.next && cp -r web/.next/static _dist/web/.next/static
+cp -r web/public _dist/web/public
+
+# 4. 压缩（约 18MB）后上传 COS，生成预签名 URL（同地域下载秒级），
+#    再用 TAT RunCommand（POWERSHELL 类型，Content 需 base64 编码）在服务器上执行：
+#    下载 → Expand-Archive → 写 ecosystem.config.js → pm2 start
+```
+
+### 服务器侧 `ecosystem.config.js`
+
+```js
+module.exports = {
+  apps: [
+    { name: 'psychhub-api', script: 'C:\\www\\psychhub\\api\\server.js',
+      cwd: 'C:\\www\\psychhub\\api', node_args: '--max-old-space-size=128',
+      env: { PORT: '3501', NODE_ENV: 'production' } },
+    { name: 'psychhub-web', script: 'C:\\www\\psychhub\\web\\server.js',
+      cwd: 'C:\\www\\psychhub\\web', node_args: '--max-old-space-size=384',
+      env: { PORT: '3500', HOSTNAME: '0.0.0.0', NODE_ENV: 'production',
+             NEXT_PUBLIC_API_BASE: 'http://127.0.0.1:3501' } },
+  ],
+};
+```
+
+### 踩坑记录
+
+1. **TAT 轮询字段是 `TaskStatus`，不是 `TaskState`** —— 读错字段会一直轮询到超时，而实际任务早已 SUCCESS。
+2. **远程脚本头不要写 `$ErrorActionPreference = "Stop"`** —— pm2 等原生命令往 stderr 打印（如 `Process not found`）会被判为终止性错误，导致整脚本 EXIT 1。应改用 `"Continue"` + 显式校验各步产物。
+3. **`NEXT_PUBLIC_*` 在 build 时内联**，运行时改环境变量无效；`rewrites.destination` 同理是构建期固化。
+4. **2G 内存机需限制堆**：`--max-old-space-size` 分别给 384 / 128 MB，否则与既有站点争抢内存。
+5. 端口 80 / 3000 常已被宝塔面板或其他站点占用，先 `netstat` 探测再选端口；并且要同时放通 **系统防火墙**（`New-NetFirewallRule`）和 **轻量云防火墙**（`CreateFirewallRules`），两者缺一不可。
+6. 开机自启：`pm2 save` + 注册 `AtStartup` 计划任务执行 `pm2 resurrect`（Windows 上 pm2 无 `startup` 子命令）。
