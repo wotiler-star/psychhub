@@ -5,6 +5,7 @@ import { useRouter, usePathname, useSearchParams } from 'next/navigation';
 interface Props {
   specialties: string[];
   regions: string[];
+  specialtyCounts?: Record<string, number>;
 }
 
 const PRICE_TIERS = [
@@ -22,7 +23,7 @@ const RATING_TIERS = [
   { label: '★ 4.9 以上', value: '4.9' },
 ];
 
-export default function CounselorFilters({ specialties, regions }: Props) {
+export default function CounselorFilters({ specialties, regions, specialtyCounts }: Props) {
   const router = useRouter();
   const pathname = usePathname();
   const sp = useSearchParams();
@@ -99,6 +100,7 @@ export default function CounselorFilters({ specialties, regions }: Props) {
         </button>
         {specialties.map((s) => {
           const active = specialty === s;
+          const count = specialtyCounts?.[s];
           return (
             <button
               key={s}
@@ -112,6 +114,7 @@ export default function CounselorFilters({ specialties, regions }: Props) {
               }}
             >
               {s}
+              {count != null && <span style={{ opacity: 0.7, marginLeft: 4, fontSize: 12 }}>({count})</span>}
             </button>
           );
         })}
@@ -178,6 +181,7 @@ export default function CounselorFilters({ specialties, regions }: Props) {
           <option value="">综合排序</option>
           <option value="rating">评分高 → 低</option>
           <option value="price">价格低 → 高</option>
+          <option value="experience">经验丰富优先</option>
           <option value="featured">精选优先</option>
         </select>
         {sp.toString() && (

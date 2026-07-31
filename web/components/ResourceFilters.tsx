@@ -6,9 +6,10 @@ import { RESOURCE_TYPES, RESOURCE_TYPE_META } from '@/lib/format';
 interface Props {
   countries: string[];
   languages: string[];
+  typeCounts?: Record<string, number>;
 }
 
-export default function ResourceFilters({ countries, languages }: Props) {
+export default function ResourceFilters({ countries, languages, typeCounts }: Props) {
   const router = useRouter();
   const pathname = usePathname();
   const sp = useSearchParams();
@@ -81,6 +82,7 @@ export default function ResourceFilters({ countries, languages }: Props) {
         </button>
         {RESOURCE_TYPES.map((t) => {
           const active = type === t;
+          const count = typeCounts?.[t];
           return (
             <button
               key={t}
@@ -94,6 +96,7 @@ export default function ResourceFilters({ countries, languages }: Props) {
               }}
             >
               {RESOURCE_TYPE_META[t].label}
+              {count != null && <span style={{ opacity: 0.7, marginLeft: 4, fontSize: 12 }}>({count})</span>}
             </button>
           );
         })}
@@ -142,8 +145,10 @@ export default function ResourceFilters({ countries, languages }: Props) {
           style={base}
         >
           <option value="">综合排序</option>
+          <option value="featured">精选优先</option>
           <option value="traffic">流量优先</option>
           <option value="name">名称 A-Z</option>
+          <option value="newest">最新收录</option>
         </select>
         {sp.toString() && (
           <button

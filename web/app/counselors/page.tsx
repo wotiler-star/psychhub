@@ -4,6 +4,9 @@ import { getCounselors } from '@/lib/api';
 import type { Counselor } from '@/lib/types';
 import CounselorFilters from '@/components/CounselorFilters';
 import Pager from '@/components/Pager';
+import ViewToggle from '@/components/ViewToggle';
+import BookmarkButton from '@/components/BookmarkButton';
+import FilterPanel from '@/components/FilterPanel';
 import { breadcrumbJsonLd, itemListJsonLd, JsonLdScript } from '@/lib/jsonld';
 import { paginate, withPagination } from '@/lib/paginate';
 
@@ -45,6 +48,7 @@ interface SP {
   minRating?: string;
   remote?: string;
   sort?: string;
+  view?: string;
   page?: string;
   [key: string]: string | undefined;
 }
@@ -76,6 +80,10 @@ export default async function CounselorsPage({
     new Set(all.map((c) => c.region).filter((r): r is string => !!r)),
   ).sort();
 
+  // 议题分面计数（用于筛选器上展示每个议题的咨询师数量）
+  const specialtyCounts: Record<string, number> = {};
+  for (const c of all) for (const s of c.specialties) specialtyCounts[s] = (specialtyCounts[s] ?? 0) + 1;
+
   // 最低评分过滤（前端派生，后端 mock 无此参数）
   const minRating = sp.minRating ? Number(sp.minRating) : 0;
   const rated = minRating > 0 ? filtered.filter((c) => (c.rating ?? 0) >= minRating) : filtered;
@@ -91,7 +99,13 @@ export default async function CounselorsPage({
       const pb = b.pricePerSession ?? Infinity;
       return pa - pb;
     }
-    // 综合 / 精选优先：精选置顶
+    if (sort === 'experience') {
+      return (b.yearsExperience ?? -1) - (a.yearsExperience ?? -1);
+    }
+    if (sort === 'featured') {
+      return Number(!!b.featured) - Number(!!a.featured);
+    }
+    // 综合：精选置顶
     return Number(!!b.featured) - Number(!!a.featured);
   });
 
@@ -122,66 +136,121 @@ export default async function CounselorsPage({
         如遇紧急危机，请优先拨打公益心理危机干预热线。
       </p>
 
-      <CounselorFilters specialties={specialties} regions={regions} />
+      <FilterPanel>
+        <CounselorFilters specialties={specialties} regions={regions} specialtyCounts={specialtyCounts} />
+      </FilterPanel>
 
-      <div style={{ fontSize: 14, color: 'var(--muted)', marginBottom: 12 }}>
-        共 {list.length} 位咨询师
-        {sp.specialty || sp.region || sp.maxPrice || sp.minRating || sp.remote ? '（已按筛选条件）' : ''}
+      <div
+        style={{
+          display: 'flex',
+          justifyContent: 'space-between',
+          alignItems: 'center',
+          marginBottom: 12,
+          gap: 12,
+          flexWrap: 'wrap',
+        }}
+      >
+        <div style={{ fontSize: 14, color: 'var(--muted)' }}>
+          共 {list.length} 位咨询师
+          {sp.specialty || sp.region || sp.maxPrice || sp.minRating || sp.remote ? '（已按筛选条件）' : ''}
+        </div>
+        <ViewToggle />
       </div>
 
-      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(320px, 1fr))', gap: 16 }}>
-        {pageItems.map((c) => (
-          <Link
-            key={c.id}
-            href={`/counselors/${c.id}`}
-            className="card"
-            style={{
-              color: 'var(--ink)',
-              textDecoration: 'none',
-              display: 'flex',
-              flexDirection: 'column',
-              gap: 10,
-            }}
-          >
-            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', gap: 8 }}>
-              <div>
-                <h3 style={{ margin: '0', fontSize: 18 }}>{c.name}</h3>
-                {c.title && <div style={{ fontSize: 13, color: 'var(--muted)', marginTop: 2 }}>{c.title}</div>}
-              </div>
-              {c.featured && <span className="chip chip-green">精选</span>}
-            </div>
-            <div style={{ display: 'flex', flexWrap: 'wrap', gap: 6 }}>
-              {c.specialties.slice(0, 3).map((s) => (
-                <span key={s} className="chip">
-                  {s}
-                </span>
-              ))}
-            </div>
-            <div style={{ fontSize: 13, color: 'var(--muted)' }}>
-              {c.region}
-              {c.remote ? ' · 支持远程' : ''} ·{' '}
-              {c.pricePerSession != null ? `¥${c.pricePerSession}/次` : '价格面议'}
-              {c.rating != null && ` · ★ ${c.rating}`}
-            </div>
-            {c.bio && (
-              <p
-                style={{
-                  fontSize: 14,
-                  color: 'var(--muted)',
-                  margin: 0,
-                  lineHeight: 1.7,
-                  display: '-webkit-box',
-                  WebkitLineClamp: 2,
-                  WebkitBoxOrient: 'vertical',
-                  overflow: 'hidden',
-                }}
+      {sp.view === 'list' ? (
+        <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
+          {pageItems.map((c) => (
+            <div
+              key={c.id}
+              className="card"
+              style={{ display: 'flex', alignItems: 'center', gap: 12, padding: '12px 16px', flexWrap: 'wrap' }}
+            >
+              <Link
+                href={`/counselors/${c.id}`}
+                style={{ flex: 1, minWidth: 220, color: 'var(--ink)', textDecoration: 'none' }}
               >
-                {c.bio}
-              </p>
-            )}
-          </Link>
-        )        )}
-      </div>
+                <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+                  <h3 style={{ margin: 0, fontSize: 16 }}>{c.name}</h3>
+                  {c.featured && <span className="chip chip-green">精选</span>}
+                </div>
+                <div style={{ fontSize: 13, color: 'var(--muted)', marginTop: 2 }}>
+                  {[c.title, c.region, c.remote ? '远程' : null, c.pricePerSession != null ? `¥${c.pricePerSession}/次` : '价格面议', c.rating != null ? `★ ${c.rating}` : null]
+                    .filter(Boolean)
+                    .join(' · ')}
+                </div>
+              </Link>
+              <div style={{ display: 'flex', gap: 6, flexShrink: 0, flexWrap: 'wrap' }}>
+                {c.specialties.slice(0, 3).map((s) => (
+                  <span key={s} className="chip">
+                    {s}
+                  </span>
+                ))}
+              </div>
+              <BookmarkButton
+                type="counselor"
+                id={c.id}
+                title={`${c.name}${c.title ? ' · ' + c.title : ''}`}
+                url={`/counselors/${c.id}`}
+                subtitle={c.specialties.join('、')}
+              />
+            </div>
+          ))}
+        </div>
+      ) : (
+        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(320px, 1fr))', gap: 16 }}>
+          {pageItems.map((c) => (
+            <Link
+              key={c.id}
+              href={`/counselors/${c.id}`}
+              className="card"
+              style={{
+                color: 'var(--ink)',
+                textDecoration: 'none',
+                display: 'flex',
+                flexDirection: 'column',
+                gap: 10,
+              }}
+            >
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', gap: 8 }}>
+                <div>
+                  <h3 style={{ margin: '0', fontSize: 18 }}>{c.name}</h3>
+                  {c.title && <div style={{ fontSize: 13, color: 'var(--muted)', marginTop: 2 }}>{c.title}</div>}
+                </div>
+                {c.featured && <span className="chip chip-green">精选</span>}
+              </div>
+              <div style={{ display: 'flex', flexWrap: 'wrap', gap: 6 }}>
+                {c.specialties.slice(0, 3).map((s) => (
+                  <span key={s} className="chip">
+                    {s}
+                  </span>
+                ))}
+              </div>
+              <div style={{ fontSize: 13, color: 'var(--muted)' }}>
+                {c.region}
+                {c.remote ? ' · 支持远程' : ''} ·{' '}
+                {c.pricePerSession != null ? `¥${c.pricePerSession}/次` : '价格面议'}
+                {c.rating != null && ` · ★ ${c.rating}`}
+              </div>
+              {c.bio && (
+                <p
+                  style={{
+                    fontSize: 14,
+                    color: 'var(--muted)',
+                    margin: 0,
+                    lineHeight: 1.7,
+                    display: '-webkit-box',
+                    WebkitLineClamp: 2,
+                    WebkitBoxOrient: 'vertical',
+                    overflow: 'hidden',
+                  }}
+                >
+                  {c.bio}
+                </p>
+              )}
+            </Link>
+          ))}
+        </div>
+      )}
 
       <Pager basePath="/counselors" params={sp} page={page} totalPages={totalPages} />
 

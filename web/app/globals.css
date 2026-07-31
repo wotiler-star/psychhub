@@ -133,6 +133,25 @@ a:hover { text-decoration: underline; }
 .chip-purple { background: var(--chip-purple-bg); color: #7c3aed; }
 .chip-amber { background: var(--chip-amber-bg); color: #a16207; }
 
+/* 筛选面板：桌面端常显；移动端（≤768px）收起为「筛选」抽屉 */
+.filter-panel__toggle { display: none; }
+@media (max-width: 768px) {
+  .filter-panel__toggle {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+  }
+  .filter-panel:not(.is-open) .filter-panel__content { display: none; }
+  .filter-panel.is-open .filter-panel__content {
+    display: block;
+    margin-top: 12px;
+    padding: 16px;
+    border: 1px solid var(--line);
+    border-radius: 12px;
+    background: var(--card);
+  }
+}
+
 /* 危机提示条（M4 危机干预组件）*/
 .crisis-bar {
   background: var(--crisis-bg); color: var(--crisis-text);

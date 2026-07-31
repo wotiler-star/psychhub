@@ -1,10 +1,12 @@
 import type { Metadata } from 'next';
 import { notFound } from 'next/navigation';
-import { getAssessment } from '@/lib/api';
+import Link from 'next/link';
+import { getAssessment, getAssessments } from '@/lib/api';
 import AssessmentQuiz from '@/components/AssessmentQuiz';
-import type { AssessmentQuestion, AssessmentBand } from '@/lib/types';
+import type { Assessment, AssessmentQuestion, AssessmentBand } from '@/lib/types';
 import { ogImageUrl } from '@/lib/og';
-import { breadcrumbJsonLd, JsonLdScript } from '@/lib/jsonld';
+import Breadcrumb from '@/components/Breadcrumb';
+import { breadcrumbJsonLd, itemListJsonLd, JsonLdScript } from '@/lib/jsonld';
 
 export const dynamic = 'force-dynamic';
 
@@ -54,6 +56,15 @@ export default async function AssessmentDetail({
   const questions = (assessment.questions ?? []) as AssessmentQuestion[];
   const bands = (assessment.interpretation?.bands ?? []) as AssessmentBand[];
 
+  // 相关测评：按同类型加权排序，取前 3 个（排除自身）
+  const allAssessments = await getAssessments().catch(() => [] as Assessment[]);
+  const related = allAssessments
+    .filter((a) => a.slug !== assessment.slug)
+    .map((a) => ({ a, score: a.type && a.type === assessment.type ? 2 : 0 }))
+    .sort((x, y) => y.score - x.score)
+    .slice(0, 3)
+    .map((r) => r.a);
+
   const faqJsonLd = {
     '@context': 'https://schema.org',
     '@type': 'FAQPage',
@@ -83,6 +94,13 @@ export default async function AssessmentDetail({
           { name: '心理测评', url: '/assessments' },
           { name: assessment.title, url: `/assessments/${assessment.slug}` },
         ])}
+      />
+      <Breadcrumb
+        items={[
+          { name: '首页', href: '/' },
+          { name: '心理测评', href: '/assessments' },
+          { name: assessment.title, href: `/assessments/${assessment.slug}` },
+        ]}
       />
       <h1 style={{ fontSize: 28, margin: '0 0 8px' }}>{assessment.title}</h1>
       <p style={{ color: 'var(--muted)', fontSize: 16, margin: '0 0 8px', lineHeight: 1.7 }}>
@@ -118,7 +136,57 @@ export default async function AssessmentDetail({
         </div>
       </section>
 
+      {related.length > 0 && (
+        <section style={{ marginTop: 32, borderTop: '1px solid #e5e7eb', paddingTop: 24 }}>
+          <h2 style={{ fontSize: 20, margin: '0 0 16px' }}>相关测评</h2>
+          <div
+            style={{
+              display: 'grid',
+              gridTemplateColumns: 'repeat(auto-fill, minmax(240px, 1fr))',
+              gap: 12,
+            }}
+          >
+            {related.map((a) => (
+              <Link
+                key={a.slug}
+                href={`/assessments/${a.slug}`}
+                className="card"
+                style={{
+                  color: 'var(--ink)',
+                  textDecoration: 'none',
+                  padding: 16,
+                  display: 'flex',
+                  flexDirection: 'column',
+                  gap: 8,
+                }}
+              >
+                <div style={{ fontSize: 12, color: 'var(--brand)', fontWeight: 700 }}>
+                  {a.type ?? '测评'}
+                </div>
+                <h3 style={{ margin: 0, fontSize: 16, lineHeight: 1.4 }}>{a.title}</h3>
+                {a.description && (
+                  <p style={{ fontSize: 13, color: 'var(--muted)', margin: 0, lineHeight: 1.6 }}>
+                    {a.description}
+                  </p>
+                )}
+              </Link>
+            ))}
+          </div>
+        </section>
+      )}
+
       <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(faqJsonLd) }} />
+      {related.length > 0 && (
+        <JsonLdScript
+          data={itemListJsonLd(
+            related.map((a) => ({
+              name: a.title,
+              url: `/assessments/${a.slug}`,
+              description: a.description ?? undefined,
+            })),
+          )}
+        />
+      )}
     </div>
   );
 }

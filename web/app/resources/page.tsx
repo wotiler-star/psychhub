@@ -4,6 +4,11 @@ import ResourceCard from '@/components/ResourceCard';
 import ResourceFilters from '@/components/ResourceFilters';
 import Pager from '@/components/Pager';
 import CompareBar from '@/components/CompareBar';
+import ViewToggle from '@/components/ViewToggle';
+import BookmarkButton from '@/components/BookmarkButton';
+import CompareToggle from '@/components/CompareToggle';
+import FilterPanel from '@/components/FilterPanel';
+import { RESOURCE_TYPE_META } from '@/lib/format';
 import { breadcrumbJsonLd, JsonLdScript } from '@/lib/jsonld';
 import { paginate, withPagination } from '@/lib/paginate';
 
@@ -45,6 +50,7 @@ interface SP {
   language?: string;
   tag?: string;
   sort?: string;
+  view?: string;
   page?: string;
   [key: string]: string | undefined;
 }
@@ -79,13 +85,17 @@ export default async function ResourcesPage({
   };
   const raw = await getResources(query).catch(() => []);
 
-  // 排序（导航站常见：流量优先 / 名称 A-Z）
+  // 排序（导航站常见：精选优先 / 流量优先 / 名称 A-Z / 最新收录）
   const resources =
     sp.sort === 'traffic'
       ? [...raw].sort((a, b) => trafficScore(b.trafficLevel) - trafficScore(a.trafficLevel))
       : sp.sort === 'name'
         ? [...raw].sort((a, b) => a.name.localeCompare(b.name))
-        : raw;
+        : sp.sort === 'featured'
+          ? [...raw].sort((a, b) => Number(!!b.featured) - Number(!!a.featured))
+          : sp.sort === 'newest'
+            ? [...raw].sort((a, b) => (b.createdAt || '').localeCompare(a.createdAt || ''))
+            : raw;
 
   const page = Number(sp.page) || 1;
   const { pageItems, totalPages } = paginate(resources, page, 12);
@@ -97,6 +107,10 @@ export default async function ResourcesPage({
   const languages = Array.from(
     new Set(resources.map((r) => r.language).filter((c): c is string => !!c)),
   ).sort();
+
+  // 类型分面计数（用于筛选器上展示每类数量）
+  const typeCounts: Record<string, number> = {};
+  for (const r of raw) typeCounts[r.type] = (typeCounts[r.type] ?? 0) + 1;
 
   return (
     <div className="container-page" style={{ padding: '32px 20px 48px' }}>
@@ -112,16 +126,68 @@ export default async function ResourcesPage({
         （数据源自《全球心理学网站 TOP50 调研报告》）
       </p>
 
-      <ResourceFilters countries={countries} languages={languages} />
+      <FilterPanel>
+        <ResourceFilters countries={countries} languages={languages} typeCounts={typeCounts} />
+      </FilterPanel>
 
-      <div style={{ color: 'var(--muted)', fontSize: 14, marginBottom: 16 }}>
-        共 {resources.length} 个资源
-        {sp.type || sp.country || sp.language || sp.tag || sp.q ? '（已按筛选条件）' : ''}
+      <div
+        style={{
+          display: 'flex',
+          justifyContent: 'space-between',
+          alignItems: 'center',
+          marginBottom: 16,
+          gap: 12,
+          flexWrap: 'wrap',
+        }}
+      >
+        <div style={{ color: 'var(--muted)', fontSize: 14 }}>
+          共 {resources.length} 个资源
+          {sp.type || sp.country || sp.language || sp.tag || sp.q ? '（已按筛选条件）' : ''}
+        </div>
+        <ViewToggle />
       </div>
 
       {pageItems.length === 0 ? (
         <div className="card" style={{ textAlign: 'center', color: 'var(--muted)' }}>
           没有匹配的资源。试试清除筛选条件，或使用顶部搜索。
+        </div>
+      ) : sp.view === 'list' ? (
+        <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
+          {pageItems.map((r) => {
+            const meta = RESOURCE_TYPE_META[r.type] ?? { label: r.type, chip: '' };
+            return (
+              <div
+                key={r.id}
+                className="card"
+                style={{ display: 'flex', alignItems: 'center', gap: 12, padding: '12px 16px', flexWrap: 'wrap' }}
+              >
+                <a
+                  href={r.url}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  style={{ flex: 1, minWidth: 200, color: 'var(--ink)', textDecoration: 'none', fontWeight: 600 }}
+                >
+                  {r.name}
+                </a>
+                <span className={`chip ${meta.chip}`} style={{ flexShrink: 0 }}>
+                  {meta.label}
+                </span>
+                <span style={{ fontSize: 13, color: 'var(--muted)', flexShrink: 0 }}>
+                  {[r.country, r.trafficLevel].filter(Boolean).join(' · ')}
+                </span>
+                <div style={{ display: 'flex', gap: 8, flexShrink: 0, alignItems: 'center' }}>
+                  <CompareToggle id={r.id} name={r.name} />
+                  <BookmarkButton
+                    type="resource"
+                    id={r.id}
+                    title={r.name}
+                    url={r.url}
+                    subtitle={r.description ?? undefined}
+                  />
+                </div>
+              </div>
+            );
+          })}
         </div>
       ) : (
         <div

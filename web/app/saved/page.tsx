@@ -1,5 +1,6 @@
 import type { Metadata } from 'next';
 import SavedList from '@/components/SavedList';
+import { breadcrumbJsonLd, JsonLdScript } from '@/lib/jsonld';
 
 export const metadata: Metadata = {
   title: '我的收藏 | 心理资源聚合',
@@ -9,5 +10,15 @@ export const metadata: Metadata = {
 };
 
 export default function SavedPage() {
-  return <SavedList />;
+  return (
+    <>
+      <JsonLdScript
+        data={breadcrumbJsonLd([
+          { name: '首页', url: '/' },
+          { name: '我的收藏', url: '/saved' },
+        ])}
+      />
+      <SavedList />
+    </>
+  );
 }

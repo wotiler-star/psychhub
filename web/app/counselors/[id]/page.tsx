@@ -1,12 +1,13 @@
 import type { Metadata } from 'next';
 import { notFound } from 'next/navigation';
 import Link from 'next/link';
-import { getCounselor, getCounselorReviews } from '@/lib/api';
+import { getCounselor, getCounselors, getCounselorReviews } from '@/lib/api';
 import type { Counselor, Review } from '@/lib/types';
 import ReviewForm from '@/components/ReviewForm';
 import BookmarkButton from '@/components/BookmarkButton';
+import Breadcrumb from '@/components/Breadcrumb';
 import { ogImageUrl } from '@/lib/og';
-import { breadcrumbJsonLd, JsonLdScript } from '@/lib/jsonld';
+import { breadcrumbJsonLd, itemListJsonLd, JsonLdScript } from '@/lib/jsonld';
 
 export const dynamic = 'force-dynamic';
 
@@ -67,6 +68,19 @@ export default async function CounselorDetail({
     reviews = [];
   }
 
+  // 相似咨询师：按擅长议题重合度 + 同地区加权排序，取前 3 位（排除自身）
+  const allCounselors = await getCounselors().catch(() => [] as Counselor[]);
+  const related = allCounselors
+    .filter((x) => x.id !== c.id)
+    .map((x) => {
+      const shared = x.specialties.filter((s) => c.specialties.includes(s)).length;
+      const sameRegion = x.region && x.region === c.region ? 1 : 0;
+      return { x, score: shared * 2 + sameRegion };
+    })
+    .sort((a, b) => b.score - a.score)
+    .slice(0, 3)
+    .map((r) => r.x);
+
   const jsonLd = {
     '@context': 'https://schema.org',
     '@type': 'Person',
@@ -80,9 +94,13 @@ export default async function CounselorDetail({
 
   return (
     <div className="container-page" style={{ padding: '32px 20px 48px', maxWidth: 820 }}>
-      <Link href="/counselors" style={{ fontSize: 14, color: 'var(--muted)' }}>
-        ← 返回咨询师列表
-      </Link>
+      <Breadcrumb
+        items={[
+          { name: '首页', href: '/' },
+          { name: '找心理咨询师', href: '/counselors' },
+          { name: c.name, href: `/counselors/${c.id}` },
+        ]}
+      />
 
       <div style={{ display: 'flex', gap: 16, alignItems: 'flex-start', marginTop: 12, flexWrap: 'wrap' }}>
         <div style={{ flex: 1, minWidth: 260 }}>
@@ -203,6 +221,53 @@ export default async function CounselorDetail({
         <ReviewForm counselorId={c.id} />
       </section>
 
+      {related.length > 0 && (
+        <section style={{ marginTop: 36, borderTop: '1px solid #e5e7eb', paddingTop: 24 }}>
+          <h2 style={{ fontSize: 20, margin: '0 0 16px' }}>相似咨询师</h2>
+          <div
+            style={{
+              display: 'grid',
+              gridTemplateColumns: 'repeat(auto-fill, minmax(240px, 1fr))',
+              gap: 12,
+            }}
+          >
+            {related.map((x) => (
+              <Link
+                key={x.id}
+                href={`/counselors/${x.id}`}
+                className="card"
+                style={{
+                  color: 'var(--ink)',
+                  textDecoration: 'none',
+                  padding: 16,
+                  display: 'flex',
+                  flexDirection: 'column',
+                  gap: 8,
+                }}
+              >
+                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', gap: 8 }}>
+                  <h3 style={{ margin: 0, fontSize: 16 }}>{x.name}</h3>
+                  {x.featured && <span className="chip chip-green">精选</span>}
+                </div>
+                {x.title && <div style={{ fontSize: 13, color: 'var(--muted)' }}>{x.title}</div>}
+                <div style={{ display: 'flex', flexWrap: 'wrap', gap: 6 }}>
+                  {x.specialties.slice(0, 3).map((s) => (
+                    <span key={s} className="chip">
+                      {s}
+                    </span>
+                  ))}
+                </div>
+                <div style={{ fontSize: 13, color: 'var(--muted)' }}>
+                  {x.region}
+                  {x.remote ? ' · 远程' : ''}
+                  {x.rating != null && ` · ★ ${x.rating}`}
+                </div>
+              </Link>
+            ))}
+          </div>
+        </section>
+      )}
+
       <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd) }} />
       <JsonLdScript
         data={breadcrumbJsonLd([
@@ -211,6 +276,17 @@ export default async function CounselorDetail({
           { name: c.name, url: `/counselors/${c.id}` },
         ])}
       />
+      {related.length > 0 && (
+        <JsonLdScript
+          data={itemListJsonLd(
+            related.map((x) => ({
+              name: x.name,
+              url: `/counselors/${x.id}`,
+              description: [x.title, ...x.specialties].filter(Boolean).join(' · '),
+            })),
+          )}
+        />
+      )}
     </div>
   );
 }

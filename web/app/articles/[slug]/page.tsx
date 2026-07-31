@@ -7,7 +7,8 @@ import ArticleFeedback from '@/components/ArticleFeedback';
 import BookmarkButton from '@/components/BookmarkButton';
 import ArticleToc from '@/components/ArticleToc';
 import ReadingProgress from '@/components/ReadingProgress';
-import { SITE_URL, breadcrumbJsonLd, JsonLdScript } from '@/lib/jsonld';
+import { SITE_URL, breadcrumbJsonLd, itemListJsonLd, JsonLdScript } from '@/lib/jsonld';
+import Breadcrumb from '@/components/Breadcrumb';
 
 export const dynamic = 'force-dynamic';
 
@@ -184,6 +185,14 @@ export default async function ArticleDetailPage({
         ])}
       />
 
+      <Breadcrumb
+        items={[
+          { name: '首页', href: '/' },
+          { name: '心理资讯', href: '/articles' },
+          { name: article.title, href: `/articles/${article.slug}` },
+        ]}
+      />
+
       <ReadingProgress />
 
       <div style={{ fontSize: 13, color: 'var(--brand)', fontWeight: 700 }}>
@@ -356,6 +365,18 @@ export default async function ArticleDetailPage({
           ← 返回心理资讯
         </Link>
       </div>
+
+      {related.length > 0 && (
+        <JsonLdScript
+          data={itemListJsonLd(
+            related.map((a) => ({
+              name: a.title,
+              url: `/articles/${a.slug}`,
+              description: a.excerpt ?? undefined,
+            })),
+          )}
+        />
+      )}
     </div>
   );
 }
