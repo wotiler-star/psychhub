@@ -8,21 +8,27 @@ export class CounselorsService {
 
   async findAll(query: QueryCounselorDto) {
     const where: Record<string, unknown> = {};
-    if (query.specialty) where.specialties = { has: query.specialty };
     if (query.region) where.region = query.region;
     if (query.remote) where.remote = true;
     if (query.maxPrice != null) where.pricePerSession = { lte: query.maxPrice };
-    if (query.q) {
-      where.OR = [
-        { name: { contains: query.q, mode: 'insensitive' } },
-        { bio: { contains: query.q, mode: 'insensitive' } },
-        { specialties: { has: query.q } },
-      ];
-    }
-    return this.prisma.counselor.findMany({
+    const rows = await this.prisma.counselor.findMany({
       where,
       orderBy: [{ featured: 'desc' }, { rating: 'desc' }],
       take: 200, // 查询上限：防止数据增长后无界查询
+    });
+    // SQLite 不支持数组 has / 不区分大小写 contains，统一在内存侧过滤（数据量小）
+    const specialty = query.specialty;
+    const q = query.q ? query.q.toLowerCase() : null;
+    return rows.filter((c) => {
+      if (specialty && !((c.specialties as string[]) || []).includes(specialty)) return false;
+      if (q) {
+        const hay = [c.name, c.bio, ...((c.specialties as string[]) || [])]
+          .filter(Boolean)
+          .join(' ')
+          .toLowerCase();
+        if (!hay.includes(q)) return false;
+      }
+      return true;
     });
   }
 

@@ -8,9 +8,11 @@ export class AssessmentsController {
   constructor(private readonly service: AssessmentsService) {}
 
   @Get()
-  @ApiOperation({ summary: '获取测评列表（公开版权量表）' })
-  findAll() {
-    return this.service.findAll();
+  @ApiOperation({ summary: '获取测评列表（公开版权量表），可按类型/关键词筛选' })
+  @ApiQuery({ name: 'type', required: false })
+  @ApiQuery({ name: 'q', required: false })
+  findAll(@Query('type') type?: string, @Query('q') q?: string) {
+    return this.service.findAll(q, type);
   }
 
   @Get(':slug')

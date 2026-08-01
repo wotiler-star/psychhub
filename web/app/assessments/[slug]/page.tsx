@@ -1,9 +1,9 @@
 import type { Metadata } from 'next';
 import { notFound } from 'next/navigation';
 import Link from 'next/link';
-import { getAssessment, getAssessments } from '@/lib/api';
+import { getAssessment, getAssessments, getCounselors, getHelplines } from '@/lib/api';
 import AssessmentQuiz from '@/components/AssessmentQuiz';
-import type { Assessment, AssessmentQuestion, AssessmentBand } from '@/lib/types';
+import type { Assessment, AssessmentQuestion, AssessmentBand, Counselor, Helpline } from '@/lib/types';
 import { ogImageUrl } from '@/lib/og';
 import Breadcrumb from '@/components/Breadcrumb';
 import { breadcrumbJsonLd, itemListJsonLd, JsonLdScript } from '@/lib/jsonld';
@@ -64,6 +64,31 @@ export default async function AssessmentDetail({
     .sort((x, y) => y.score - x.score)
     .slice(0, 3)
     .map((r) => r.a);
+
+  // 跨板块推荐：测评类型 → 擅长议题关键词，推荐相关咨询师；并引导至求助热线
+  const TYPE_TO_SPECIALTY: Record<string, string[]> = {
+    DEPRESSION: ['抑郁', '情绪', '心境'],
+    ANXIETY: ['焦虑', '情绪'],
+    STRESS: ['压力', '情绪'],
+    SLEEP: ['睡眠'],
+    SELF_ESTEEM: ['自尊', '自信'],
+    WELLBEING: ['幸福感', '正念', '个人成长'],
+    PERSONALITY: ['人格', '性格'],
+  };
+  const kws = TYPE_TO_SPECIALTY[assessment.type ?? ''] ?? [];
+  const counselorsAll = await getCounselors().catch(() => [] as Counselor[]);
+  const supportCounselors = counselorsAll
+    .map((c) => ({
+      c,
+      score:
+        (kws.some((k) => c.specialties.some((s) => s.includes(k))) ? 2 : 0) +
+        (c.featured ? 1 : 0) +
+        (c.rating ?? 0) / 5,
+    }))
+    .sort((a, b) => b.score - a.score)
+    .slice(0, 2)
+    .map((r) => r.c);
+  const helplines = await getHelplines({ category: 'CRISIS' }).catch(() => []);
 
   const faqJsonLd = {
     '@context': 'https://schema.org',
@@ -174,6 +199,61 @@ export default async function AssessmentDetail({
           </div>
         </section>
       )}
+
+      {/* 跨板块推荐：测评 → 咨询师 / 求助热线 */}
+      <section style={{ marginTop: 32, borderTop: '1px solid var(--line)', paddingTop: 24 }}>
+        <h2 style={{ fontSize: 20, margin: '0 0 6px' }}>需要更多支持？</h2>
+        <p style={{ color: 'var(--muted)', fontSize: 14, margin: '0 0 16px', lineHeight: 1.7 }}>
+          测评只是自我觉察的起点。若想深入梳理，可预约专业咨询师；如遇紧急危机，请优先拨打求助热线。
+        </p>
+        {supportCounselors.length > 0 && (
+          <div
+            style={{
+              display: 'grid',
+              gridTemplateColumns: 'repeat(auto-fill, minmax(240px, 1fr))',
+              gap: 12,
+              marginBottom: 16,
+            }}
+          >
+            {supportCounselors.map((c: Counselor) => (
+              <Link
+                key={c.id}
+                href={`/counselors/${c.id}`}
+                className="card"
+                style={{
+                  color: 'var(--ink)',
+                  textDecoration: 'none',
+                  padding: 16,
+                  display: 'flex',
+                  flexDirection: 'column',
+                  gap: 8,
+                }}
+              >
+                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', gap: 8 }}>
+                  <h3 style={{ margin: 0, fontSize: 16 }}>{c.name}</h3>
+                  {c.featured && <span className="chip chip-green">精选</span>}
+                </div>
+                {c.title && <div style={{ fontSize: 13, color: 'var(--muted)' }}>{c.title}</div>}
+                <div style={{ display: 'flex', flexWrap: 'wrap', gap: 6 }}>
+                  {c.specialties.slice(0, 3).map((s) => (
+                    <span key={s} className="chip">
+                      {s}
+                    </span>
+                  ))}
+                </div>
+                <div style={{ fontSize: 13, color: 'var(--muted)' }}>
+                  {c.region}
+                  {c.remote ? ' · 支持远程' : ''}
+                  {c.rating != null && ` · ★ ${c.rating}`}
+                </div>
+              </Link>
+            ))}
+          </div>
+        )}
+        <a className="btn-primary" href="/helplines">
+          {helplines.length > 0 ? `查看 ${helplines.length} 条心理求助热线 →` : '查看心理求助热线 →'}
+        </a>
+      </section>
 
       <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(faqJsonLd) }} />
       {related.length > 0 && (

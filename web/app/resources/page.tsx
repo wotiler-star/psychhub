@@ -1,4 +1,5 @@
 import type { Metadata } from 'next';
+import Link from 'next/link';
 import { getResources } from '@/lib/api';
 import ResourceCard from '@/components/ResourceCard';
 import ResourceFilters from '@/components/ResourceFilters';
@@ -10,6 +11,7 @@ import CompareToggle from '@/components/CompareToggle';
 import FilterPanel from '@/components/FilterPanel';
 import { RESOURCE_TYPE_META } from '@/lib/format';
 import { breadcrumbJsonLd, JsonLdScript } from '@/lib/jsonld';
+import EmptyState from '@/components/EmptyState';
 import { paginate, withPagination } from '@/lib/paginate';
 
 export const dynamic = 'force-dynamic';
@@ -148,9 +150,10 @@ export default async function ResourcesPage({
       </div>
 
       {pageItems.length === 0 ? (
-        <div className="card" style={{ textAlign: 'center', color: 'var(--muted)' }}>
-          没有匹配的资源。试试清除筛选条件，或使用顶部搜索。
-        </div>
+        <EmptyState
+          title="没有匹配的资源"
+          hint="试试清除筛选条件，或使用顶部搜索框。"
+        />
       ) : sp.view === 'list' ? (
         <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
           {pageItems.map((r) => {
@@ -161,19 +164,20 @@ export default async function ResourcesPage({
                 className="card"
                 style={{ display: 'flex', alignItems: 'center', gap: 12, padding: '12px 16px', flexWrap: 'wrap' }}
               >
-                <a
-                  href={r.url}
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  style={{ flex: 1, minWidth: 200, color: 'var(--ink)', textDecoration: 'none', fontWeight: 600 }}
-                >
-                  {r.name}
-                </a>
+                <div style={{ flex: 1, minWidth: 200 }}>
+                  <Link href={`/resources/${r.id}`} style={{ color: 'var(--ink)', textDecoration: 'none', fontWeight: 600 }}>
+                    {r.name}
+                  </Link>
+                  <span style={{ fontSize: 13, color: 'var(--muted)', marginLeft: 8 }}>
+                    {[r.country, r.trafficLevel].filter(Boolean).join(' · ')}
+                    {' '}
+                    <a href={r.url} target="_blank" rel="noopener noreferrer" style={{ color: 'var(--brand)' }}>
+                      访问 ↗
+                    </a>
+                  </span>
+                </div>
                 <span className={`chip ${meta.chip}`} style={{ flexShrink: 0 }}>
                   {meta.label}
-                </span>
-                <span style={{ fontSize: 13, color: 'var(--muted)', flexShrink: 0 }}>
-                  {[r.country, r.trafficLevel].filter(Boolean).join(' · ')}
                 </span>
                 <div style={{ display: 'flex', gap: 8, flexShrink: 0, alignItems: 'center' }}>
                   <CompareToggle id={r.id} name={r.name} />

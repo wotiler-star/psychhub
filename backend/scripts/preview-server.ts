@@ -131,10 +131,17 @@ function filterHelplines(params: URLSearchParams) {
   const country = params.get('country') || '';
   const language = params.get('language') || '';
   const category = params.get('category') || '';
+  const q = (params.get('q') || '').toLowerCase();
   return helplines
     .filter((h) => (country ? h.country === country : true))
     .filter((h) => (language ? h.language === language : true))
-    .filter((h) => (category ? h.category === category : true));
+    .filter((h) => (category ? h.category === category : true))
+    .filter((h) =>
+      !q
+        ? true
+        : (h.name || '').toLowerCase().includes(q) ||
+          (h.description || '').toLowerCase().includes(q),
+    );
 }
 
 const server = http.createServer(async (req, res) => {
@@ -160,12 +167,19 @@ const server = http.createServer(async (req, res) => {
       return send(res, 200, filterHelplines(params));
     }
     if (p === '/api/assessments' || p === '/api/assessments/') {
-      // 列表不返回题目细节
-      return send(
-        res,
-        200,
-        assessments.map(({ questions, interpretation, ...rest }) => rest),
-      );
+      // 列表不返回题目细节；支持 q / type 筛选
+      const q = (params.get('q') || '').toLowerCase();
+      const type = params.get('type') || '';
+      const list = assessments
+        .filter((a) => (type ? a.type === type : true))
+        .filter((a) =>
+          !q
+            ? true
+            : (a.title || '').toLowerCase().includes(q) ||
+              (a.description || '').toLowerCase().includes(q),
+        )
+        .map(({ questions, interpretation, ...rest }) => rest);
+      return send(res, 200, list);
     }
     const assMatch = p.match(/^\/api\/assessments\/([^/]+)$/);
     if (assMatch) {
@@ -173,7 +187,20 @@ const server = http.createServer(async (req, res) => {
       return item ? send(res, 200, item) : send(res, 404, { error: 'not found' });
     }
     if (p === '/api/articles' || p === '/api/articles/') {
-      return send(res, 200, articles);
+      // 支持 category / q 筛选
+      const category = params.get('category') || '';
+      const q = (params.get('q') || '').toLowerCase();
+      const list = articles
+        .filter((a) => (category ? a.category === category : true))
+        .filter((a) =>
+          !q
+            ? true
+            : (a.title || '').toLowerCase().includes(q) ||
+              (a.excerpt || '').toLowerCase().includes(q) ||
+              (a.content || '').toLowerCase().includes(q) ||
+              (a.tags || []).some((t: string) => t.toLowerCase().includes(q)),
+        );
+      return send(res, 200, list);
     }
     const artMatch = p.match(/^\/api\/articles\/([^/]+)$/);
     if (artMatch) {
@@ -185,11 +212,19 @@ const server = http.createServer(async (req, res) => {
       const region = params.get('region') || '';
       const maxPrice = params.get('maxPrice') ? Number(params.get('maxPrice')) : null;
       const remoteOnly = params.get('remote') === '1';
+      const q = (params.get('q') || '').toLowerCase();
       const list = counselors
         .filter((c) => (specialty ? c.specialties.includes(specialty) : true))
         .filter((c) => (region ? c.region === region : true))
         .filter((c) => (maxPrice != null ? (c.pricePerSession ?? Infinity) <= maxPrice : true))
         .filter((c) => (remoteOnly ? c.remote : true))
+        .filter((c) =>
+          !q
+            ? true
+            : c.name.toLowerCase().includes(q) ||
+              c.specialties.some((s: string) => s.toLowerCase().includes(q)) ||
+              (c.bio || '').toLowerCase().includes(q),
+        )
         .sort((a, b) => Number(!!b.featured) - Number(!!a.featured));
       return send(res, 200, list);
     }

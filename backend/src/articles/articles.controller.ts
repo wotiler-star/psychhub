@@ -8,9 +8,11 @@ export class ArticlesController {
   constructor(private readonly service: ArticlesService) {}
 
   @Get()
-  @ApiOperation({ summary: '获取心理资讯/科普文章列表（可按分类筛选）' })
-  findAll(@Query('category') category?: string) {
-    return this.service.findAll(category);
+  @ApiOperation({ summary: '获取心理资讯/科普文章列表（可按分类/关键词筛选）' })
+  @ApiQuery({ name: 'category', required: false, enum: ['POPSCI', 'RESEARCH', 'NEWS'] })
+  @ApiQuery({ name: 'q', required: false })
+  findAll(@Query('category') category?: string, @Query('q') q?: string) {
+    return this.service.findAll(category, q);
   }
 
   @Get(':slug')

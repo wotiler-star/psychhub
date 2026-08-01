@@ -9,6 +9,7 @@ const TYPE_LABEL: Record<BookmarkType, string> = {
   resource: '资源',
   article: '文章',
   counselor: '咨询师',
+  helpline: '热线',
 };
 
 const TABS: { key: 'all' | BookmarkType; label: string }[] = [
@@ -16,6 +17,7 @@ const TABS: { key: 'all' | BookmarkType; label: string }[] = [
   { key: 'resource', label: '资源' },
   { key: 'article', label: '文章' },
   { key: 'counselor', label: '咨询师' },
+  { key: 'helpline', label: '热线' },
 ];
 
 function downloadFile(filename: string, content: string) {

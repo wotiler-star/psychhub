@@ -1,8 +1,8 @@
 import type { Metadata } from 'next';
 import { notFound } from 'next/navigation';
 import Link from 'next/link';
-import { getCounselor, getCounselors, getCounselorReviews } from '@/lib/api';
-import type { Counselor, Review } from '@/lib/types';
+import { getCounselor, getCounselors, getCounselorReviews, getAssessments, getHelplines } from '@/lib/api';
+import type { Counselor, Review, Assessment, Helpline } from '@/lib/types';
 import ReviewForm from '@/components/ReviewForm';
 import BookmarkButton from '@/components/BookmarkButton';
 import Breadcrumb from '@/components/Breadcrumb';
@@ -80,6 +80,30 @@ export default async function CounselorDetail({
     .sort((a, b) => b.score - a.score)
     .slice(0, 3)
     .map((r) => r.x);
+
+  // 跨板块推荐：咨询师擅长议题 → 测评类型，推荐相关测评；并引导至求助热线
+  const SPEC_TO_TYPE: Record<string, string[]> = {
+    抑郁: ['DEPRESSION'],
+    情绪: ['DEPRESSION', 'ANXIETY', 'STRESS'],
+    焦虑: ['ANXIETY'],
+    压力: ['STRESS'],
+    睡眠: ['SLEEP'],
+    自尊: ['SELF_ESTEEM'],
+    自信: ['SELF_ESTEEM'],
+    幸福感: ['WELLBEING'],
+    正念: ['WELLBEING'],
+    个人成长: ['WELLBEING'],
+    人格: ['PERSONALITY'],
+    性格: ['PERSONALITY'],
+  };
+  const aTypes = Array.from(new Set(c.specialties.flatMap((s) => SPEC_TO_TYPE[s] ?? [])));
+  const assessmentsAll = await getAssessments().catch(() => [] as Assessment[]);
+  const relatedAssessments = assessmentsAll
+    .map((a) => ({ a, score: a.type && aTypes.includes(a.type) ? 2 : 0 }))
+    .sort((x, y) => y.score - x.score)
+    .slice(0, 3)
+    .map((r) => r.a);
+  const crisisHelplines = await getHelplines({ category: 'CRISIS' }).catch(() => [] as Helpline[]);
 
   const jsonLd = {
     '@context': 'https://schema.org',
@@ -267,6 +291,65 @@ export default async function CounselorDetail({
           </div>
         </section>
       )}
+
+      {/* 跨板块推荐：咨询师 → 测评 / 求助热线 */}
+      {relatedAssessments.length > 0 && (
+        <section style={{ marginTop: 36, borderTop: '1px solid var(--line)', paddingTop: 24 }}>
+          <h2 style={{ fontSize: 20, margin: '0 0 16px' }}>相关测评</h2>
+          <div
+            style={{
+              display: 'grid',
+              gridTemplateColumns: 'repeat(auto-fill, minmax(240px, 1fr))',
+              gap: 12,
+            }}
+          >
+            {relatedAssessments.map((a) => (
+              <Link
+                key={a.slug}
+                href={`/assessments/${a.slug}`}
+                className="card"
+                style={{
+                  color: 'var(--ink)',
+                  textDecoration: 'none',
+                  padding: 16,
+                  display: 'flex',
+                  flexDirection: 'column',
+                  gap: 8,
+                }}
+              >
+                <div style={{ fontSize: 12, color: 'var(--brand)', fontWeight: 700 }}>
+                  {a.type ?? '测评'}
+                </div>
+                <h3 style={{ margin: 0, fontSize: 16, lineHeight: 1.4 }}>{a.title}</h3>
+                {a.description && (
+                  <p style={{ fontSize: 13, color: 'var(--muted)', margin: 0, lineHeight: 1.6 }}>
+                    {a.description}
+                  </p>
+                )}
+              </Link>
+            ))}
+          </div>
+        </section>
+      )}
+
+      <section
+        style={{
+          marginTop: 32,
+          borderLeft: '3px solid var(--danger)',
+          background: 'var(--card)',
+          padding: '16px 18px',
+          borderRadius: 8,
+        }}
+      >
+        <strong style={{ fontSize: 15 }}>需要更多帮助？</strong>
+        <p style={{ fontSize: 14, color: 'var(--muted)', margin: '6px 0 12px', lineHeight: 1.7 }}>
+          若出现持续情绪低落、自伤念头等紧急情况，请立即拨打公益心理危机干预热线。
+          {crisisHelplines.length > 0 && ` 当前收录 ${crisisHelplines.length} 条危机热线。`}
+        </p>
+        <a className="btn-primary" href="/helplines">
+          查看心理求助热线 →
+        </a>
+      </section>
 
       <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd) }} />
       <JsonLdScript

@@ -1,14 +1,14 @@
-import { PrismaClient, ResourceType } from '@prisma/client';
+import { createPrismaClient } from './prisma-extensions';
 import * as bcrypt from 'bcryptjs';
 import { resources, helplines, assessments, articles, counselors, reviews } from './seed-data';
 
-const prisma = new PrismaClient();
+const prisma = createPrismaClient();
 
 async function main() {
   console.log('开始写入种子数据...');
   for (const r of resources) {
     const { featured, ...rest } = r;
-    const data = { ...rest, type: rest.type as ResourceType, featured: !!featured };
+    const data = { ...rest, type: rest.type, featured: !!featured };
     await prisma.resource.upsert({
       where: { name: r.name },
       update: data,

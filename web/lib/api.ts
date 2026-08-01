@@ -49,6 +49,7 @@ export interface HelplineQuery {
   country?: string;
   language?: string;
   category?: string;
+  q?: string;
 }
 
 export function getHelplines(query: HelplineQuery = {}): Promise<Helpline[]> {
@@ -60,8 +61,17 @@ export function getHelplines(query: HelplineQuery = {}): Promise<Helpline[]> {
   return getJson<Helpline[]>(`/api/helplines${qs ? `?${qs}` : ''}`);
 }
 
-export function getAssessments(): Promise<Assessment[]> {
-  return getJson<Assessment[]>('/api/assessments');
+export interface AssessmentQuery {
+  q?: string;
+  type?: string;
+}
+
+export function getAssessments(query: AssessmentQuery = {}): Promise<Assessment[]> {
+  const params = new URLSearchParams();
+  if (query.q) params.set('q', query.q);
+  if (query.type) params.set('type', query.type);
+  const qs = params.toString();
+  return getJson<Assessment[]>(`/api/assessments${qs ? `?${qs}` : ''}`);
 }
 
 export function getAssessment(slug: string): Promise<Assessment> {
@@ -70,11 +80,13 @@ export function getAssessment(slug: string): Promise<Assessment> {
 
 export interface ArticleQuery {
   category?: string;
+  q?: string;
 }
 
 export function getArticles(query: ArticleQuery = {}): Promise<Article[]> {
   const params = new URLSearchParams();
   if (query.category) params.set('category', query.category);
+  if (query.q) params.set('q', query.q);
   const qs = params.toString();
   return getJson<Article[]>(`/api/articles${qs ? `?${qs}` : ''}`);
 }
@@ -88,6 +100,7 @@ export interface CounselorQuery {
   region?: string;
   maxPrice?: number;
   remote?: boolean;
+  q?: string;
 }
 
 export function getCounselors(query: CounselorQuery = {}): Promise<Counselor[]> {
@@ -96,6 +109,7 @@ export function getCounselors(query: CounselorQuery = {}): Promise<Counselor[]> 
   if (query.region) params.set('region', query.region);
   if (query.maxPrice != null) params.set('maxPrice', String(query.maxPrice));
   if (query.remote) params.set('remote', '1');
+  if (query.q) params.set('q', query.q);
   const qs = params.toString();
   return getJson<Counselor[]>(`/api/counselors${qs ? `?${qs}` : ''}`);
 }

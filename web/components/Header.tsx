@@ -1,6 +1,7 @@
 'use client';
 import { useState, useEffect } from 'react';
 import Link from 'next/link';
+import { usePathname } from 'next/navigation';
 import { useAuth } from '@/components/AuthProvider';
 
 // 主导航：一级栏目 ≤ 7（原则 R2.1：米勒法则），全部能回链业务目标
@@ -17,6 +18,13 @@ const NAV = [
 export default function Header() {
   const { user, loading, logout } = useAuth();
   const [theme, setTheme] = useState<'light' | 'dark'>('light');
+  const [navOpen, setNavOpen] = useState(false);
+  const pathname = usePathname();
+
+  // 路由变化时自动收起移动端菜单
+  useEffect(() => {
+    setNavOpen(false);
+  }, [pathname]);
 
   useEffect(() => {
     const cur =
@@ -38,6 +46,7 @@ export default function Header() {
 
   return (
     <header
+      className={navOpen ? 'nav-open' : ''}
       style={{
         position: 'sticky',
         top: 0,
@@ -53,6 +62,7 @@ export default function Header() {
           alignItems: 'center',
           justifyContent: 'space-between',
           height: 60,
+          position: 'relative',
         }}
       >
         <Link
@@ -83,7 +93,11 @@ export default function Header() {
           </span>
           心理资源聚合
         </Link>
-        <nav aria-label="主导航" style={{ display: 'flex', gap: 4, alignItems: 'center', flexWrap: 'wrap' }}>
+        <nav
+          aria-label="主导航"
+          className="nav-inline"
+          style={{ display: 'flex', gap: 4, alignItems: 'center', flexWrap: 'wrap' }}
+        >
           {NAV.map((n) => (
             <Link
               key={n.href}
@@ -230,6 +244,15 @@ export default function Header() {
             需要帮助？
           </a>
         </nav>
+        <button
+          type="button"
+          className="nav-burger"
+          aria-label="打开菜单"
+          aria-expanded={navOpen}
+          onClick={() => setNavOpen((v) => !v)}
+        >
+          {navOpen ? '✕' : '☰'}
+        </button>
       </div>
     </header>
   );

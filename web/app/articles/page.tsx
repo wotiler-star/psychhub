@@ -4,6 +4,8 @@ import { getArticles } from '@/lib/api';
 import Pager from '@/components/Pager';
 import ViewToggle from '@/components/ViewToggle';
 import BookmarkButton from '@/components/BookmarkButton';
+import SearchBox from '@/components/SearchBox';
+import EmptyState from '@/components/EmptyState';
 import { breadcrumbJsonLd, itemListJsonLd, JsonLdScript } from '@/lib/jsonld';
 import { paginate, withPagination } from '@/lib/paginate';
 
@@ -14,6 +16,7 @@ interface SP {
   tag?: string;
   sort?: string;
   view?: string;
+  q?: string;
   page?: string;
 }
 
@@ -22,12 +25,10 @@ export async function generateMetadata({
 }: {
   searchParams: Promise<SP>;
 }): Promise<Metadata> {
-  const { category, tag, sort, view, page: pageStr } = await searchParams;
+  const { category, tag, sort, view, q, page: pageStr } = await searchParams;
   const page = Number(pageStr) || 1;
-  const all = await getArticles().catch(() => []);
-  let list = category ? all.filter((a) => a.category === category) : all;
-  if (tag) list = list.filter((a) => a.tags.includes(tag));
-  const total = list.length;
+  const all = await getArticles({ category, q }).catch(() => []);
+  let list = tag ? all.filter((a) => a.tags.includes(tag)) : all;
   return withPagination(
     {
       title: '心理资讯 | 科普 · 研究 · 求助资源',
@@ -36,9 +37,9 @@ export async function generateMetadata({
       alternates: { canonical: '/articles' },
     },
     '/articles',
-    { category, tag, sort, view },
+    { category, tag, sort, view, q },
     page,
-    total,
+    list.length,
     9,
   );
 }
@@ -56,19 +57,16 @@ export default async function ArticlesPage({
 }: {
   searchParams: Promise<SP>;
 }) {
-  const { category, tag, sort, view, page: pageStr } = await searchParams;
-  const all = await getArticles().catch(() => []);
+  const { category, tag, sort, view, q, page: pageStr } = await searchParams;
+  const all = await getArticles({ category, q }).catch(() => []);
 
-  // 分类计数（全量统计，用于筛选器上展示每类数量）
   const categoryCounts: Record<string, number> = {};
   for (const a of all) {
     if (a.category) categoryCounts[a.category] = (categoryCounts[a.category] ?? 0) + 1;
   }
 
-  let articles = category ? all.filter((a) => a.category === category) : all;
-  if (tag) articles = articles.filter((a) => a.tags.includes(tag));
+  let articles = tag ? all.filter((a) => a.tags.includes(tag)) : all;
 
-  // 默认按发布时间倒序（最新），可选最早
   articles = [...articles].sort((a, b) =>
     sort === 'oldest'
       ? a.publishedAt.localeCompare(b.publishedAt)
@@ -77,6 +75,21 @@ export default async function ArticlesPage({
 
   const page = Number(pageStr) || 1;
   const { pageItems, totalPages } = paginate(articles, page, 9);
+
+  const href = (overrides: Record<string, string | undefined>) => {
+    const params = new URLSearchParams();
+    if (category) params.set('category', category);
+    if (tag) params.set('tag', tag);
+    if (q) params.set('q', q);
+    if (view) params.set('view', view);
+    for (const [k, v] of Object.entries(overrides)) {
+      if (v) params.set(k, v);
+      else params.delete(k);
+    }
+    params.delete('page');
+    const qs = params.toString();
+    return `/articles${qs ? '?' + qs : ''}`;
+  };
 
   return (
     <div className="container-page" style={{ padding: '32px 20px 48px' }}>
@@ -102,7 +115,7 @@ export default async function ArticlesPage({
 
       <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap', marginBottom: 16, alignItems: 'center' }}>
         <Link
-          href="/articles"
+          href={href({ category: undefined })}
           className="chip"
           style={{
             background: !category ? 'var(--brand)' : 'var(--surface-2)',
@@ -115,7 +128,7 @@ export default async function ArticlesPage({
         {CATS.map((c) => (
           <Link
             key={c}
-            href={`/articles?category=${c}`}
+            href={href({ category: category === c ? undefined : c })}
             className="chip"
             style={{
               background: category === c ? 'var(--brand)' : 'var(--surface-2)',
@@ -129,18 +142,13 @@ export default async function ArticlesPage({
         ))}
 
         <div style={{ marginLeft: 'auto', display: 'flex', gap: 8, alignItems: 'center', flexWrap: 'wrap' }}>
+          <SearchBox paramName="q" placeholder="搜索资讯…" width={170} />
           {(['newest', 'oldest'] as const).map((v) => {
-            const params = new URLSearchParams();
-            if (category) params.set('category', category);
-            if (tag) params.set('tag', tag);
-            if (view) params.set('view', view);
-            if (v === 'oldest') params.set('sort', 'oldest');
-            const href = `/articles${params.toString() ? '?' + params.toString() : ''}`;
             const active = (sort === 'oldest') === (v === 'oldest');
             return (
               <Link
                 key={v}
-                href={href}
+                href={href({ sort: v === 'oldest' ? 'oldest' : undefined })}
                 className="chip"
                 style={{
                   background: active ? 'var(--brand)' : 'var(--surface-2)',
@@ -170,9 +178,7 @@ export default async function ArticlesPage({
       )}
 
       {articles.length === 0 ? (
-        <div className="card" style={{ textAlign: 'center', color: 'var(--muted)', padding: 32 }}>
-          资讯加载中或暂不可用，请稍后重试。
-        </div>
+        <EmptyState title="没有符合条件的资讯" hint="试试清除筛选条件，或更换关键词。" />
       ) : view === 'list' ? (
         <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
           {pageItems.map((a) => (
@@ -204,28 +210,39 @@ export default async function ArticlesPage({
       ) : (
         <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(300px, 1fr))', gap: 16 }}>
           {pageItems.map((a) => (
-            <Link key={a.id} href={`/articles/${a.slug}`} className="card" style={{ color: 'var(--ink)', textDecoration: 'none' }}>
-              <div style={{ fontSize: 13, color: 'var(--brand)', fontWeight: 700 }}>
-                {a.category ? (CATEGORY_LABEL[a.category] ?? a.category) : '资讯'}
+            <div key={a.id} className="card" style={{ position: 'relative' }}>
+              <div style={{ position: 'absolute', top: 12, right: 12 }}>
+                <BookmarkButton
+                  type="article"
+                  id={a.slug}
+                  title={a.title}
+                  url={`/articles/${a.slug}`}
+                  subtitle={a.excerpt ?? undefined}
+                />
               </div>
-              <h3 style={{ margin: '8px 0 6px', fontSize: 18 }}>{a.title}</h3>
-              {a.excerpt && (
-                <p style={{ color: 'var(--muted)', fontSize: 14, margin: '0 0 12px', lineHeight: 1.7 }}>{a.excerpt}</p>
-              )}
-              <div style={{ display: 'flex', gap: 6, flexWrap: 'wrap', fontSize: 12, color: 'var(--muted)', alignItems: 'center' }}>
-                <span>{a.publishedAt}</span>
-                {a.tags.slice(0, 3).map((t) => (
-                  <span key={t} className="chip" style={{ fontSize: 12, background: 'var(--surface-2)' }}>
-                    {t}
-                  </span>
-                ))}
-              </div>
-            </Link>
+              <Link href={`/articles/${a.slug}`} style={{ display: 'block', color: 'var(--ink)', textDecoration: 'none', paddingRight: 36 }}>
+                <div style={{ fontSize: 13, color: 'var(--brand)', fontWeight: 700 }}>
+                  {a.category ? (CATEGORY_LABEL[a.category] ?? a.category) : '资讯'}
+                </div>
+                <h3 style={{ margin: '8px 0 6px', fontSize: 18 }}>{a.title}</h3>
+                {a.excerpt && (
+                  <p style={{ color: 'var(--muted)', fontSize: 14, margin: '0 0 12px', lineHeight: 1.7 }}>{a.excerpt}</p>
+                )}
+                <div style={{ display: 'flex', gap: 6, flexWrap: 'wrap', fontSize: 12, color: 'var(--muted)', alignItems: 'center' }}>
+                  <span>{a.publishedAt}</span>
+                  {a.tags.slice(0, 3).map((t) => (
+                    <span key={t} className="chip" style={{ fontSize: 12, background: 'var(--surface-2)' }}>
+                      {t}
+                    </span>
+                  ))}
+                </div>
+              </Link>
+            </div>
           ))}
         </div>
       )}
 
-      <Pager basePath="/articles" params={{ category, tag, sort, view }} page={page} totalPages={totalPages} />
+      <Pager basePath="/articles" params={{ category, tag, sort, view, q }} page={page} totalPages={totalPages} />
     </div>
   );
 }

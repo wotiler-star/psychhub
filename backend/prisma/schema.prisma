@@ -1,4 +1,7 @@
-// 心理学聚合平台 · 数据模型（Prisma + PostgreSQL）
+// 心理学聚合平台 · 数据模型（Prisma + SQLite）
+// 说明：生产环境原定 PostgreSQL；因轻量服务器(2GB)内存紧张且无 PG，
+// 现改用 SQLite（零额外进程、最省内存）。枚举与标量数组在 SQLite 不支持，
+// 已做兼容：type 退化为 String；tags/specialties/approach/languages 用 Json 存储（Prisma 自动收发数组）。
 // 覆盖三期实体：资源导航 / 求助资源 / 测评 / 心理资讯 / 咨询师目录 / 咨询师评价 / 账号用户
 
 generator client {
@@ -6,31 +9,21 @@ generator client {
 }
 
 datasource db {
-  provider = "postgresql"
+  provider = "sqlite"
   url      = env("DATABASE_URL")
-}
-
-enum ResourceType {
-  MEDIA      // 内容媒体 / 科普
-  SAAS       // 执业者 SaaS / EHR
-  THERAPY    // 在线咨询 / 治疗平台
-  ORG        // 公益组织 / 政府 / 协会
-  TOOL       // 测评 / 专业工具
-  MEDITATION // 冥想 / 自助应用
-  EDU        // 学术 / 教育出版
 }
 
 model Resource {
   id           String       @id @default(cuid())
   name         String
   url          String
-  type         ResourceType
+  type         String
   country      String?
   language     String?
   description  String?
   trafficLevel String? // 量级描述，如 "2330万/月"
   suitableFor  String?
-  tags         String[]
+  tags         String // 数组以 "|a|b|" 形式存储，经 Prisma 扩展还原为数组
   featured     Boolean      @default(false)
   createdAt    DateTime     @default(now())
   updatedAt    DateTime     @updatedAt
@@ -63,8 +56,8 @@ model Assessment {
   title         String
   description   String?
   type          String? // DEPRESSION / ANXIETY / PERSONALITY
-  questions     Json // [{ id, text, options: [{ score, label }] }]
-  interpretation Json? // 计分区间与解读
+  questions     String // JSON 字符串，经 Prisma 扩展还原为对象数组
+  interpretation String? // JSON 字符串，经 Prisma 扩展还原为对象
   source        String? // 量表来源与版权说明
   createdAt     DateTime @default(now())
 }
@@ -76,7 +69,7 @@ model Article {
   excerpt     String? // 摘要
   content     String // 正文（纯文本，按段落分隔）
   category    String? // POPSCI 科普 / RESEARCH 研究 / NEWS 资讯
-  tags        String[]
+  tags        String // 数组以 "|a|b|" 形式存储，经 Prisma 扩展还原为数组
   sourceName  String? // 来源站点/作者
   sourceUrl   String? // 原文链接
   author      String?
@@ -94,11 +87,11 @@ model Counselor {
   id              String   @id @default(cuid())
   name            String
   title           String?
-  specialties     String[] // 擅长议题：抑郁/焦虑/关系/创伤...
-  approach        String[] // 取向/流派：CBT/精神动力学/家庭治疗...
+  specialties     String // 擅长议题（"|抑郁|焦虑|"，经 Prisma 扩展还原为数组）
+  approach        String // 取向/流派（"|CBT|..."，经 Prisma 扩展还原为数组）
   region          String? // 所在地区（含「远程（全国）」「海外（北美）」等）
   remote          Boolean  @default(false)
-  languages       String[]
+  languages       String // 语言（"|中文|英文|"，经 Prisma 扩展还原为数组）
   pricePerSession Int? // 单次参考价（人民币）
   currency        String   @default("CNY")
   org             String? // 所属机构 / 平台
@@ -107,7 +100,7 @@ model Counselor {
   bookingUrl      String? // 外部预约入口（转介）
   rating          Float? // 参考评分
   yearsExperience Int? // 从业年限
-  tags            String[]
+  tags            String // 标签（"|a|b|"，经 Prisma 扩展还原为数组）
   featured        Boolean  @default(false)
   reviews         Review[]
   createdAt       DateTime @default(now())

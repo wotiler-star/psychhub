@@ -2,15 +2,14 @@ import type { Resource } from '@/lib/types';
 import { RESOURCE_TYPE_META } from '@/lib/format';
 import BookmarkButton from '@/components/BookmarkButton';
 import CompareToggle from '@/components/CompareToggle';
+import Link from 'next/link';
 
 export default function ResourceCard({ resource }: { resource: Resource }) {
   const meta = RESOURCE_TYPE_META[resource.type] ?? { label: resource.type, chip: '' };
   return (
     <div className="card" style={{ position: 'relative', display: 'block' }}>
-      <a
-        href={resource.url}
-        target="_blank"
-        rel="noopener noreferrer"
+      <Link
+        href={`/resources/${resource.id}`}
         style={{ display: 'block', color: 'var(--ink)', textDecoration: 'none', paddingRight: 44 }}
       >
         <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 8 }}>
@@ -31,8 +30,17 @@ export default function ResourceCard({ resource }: { resource: Resource }) {
             </span>
           ))}
         </div>
-      </a>
-      <div style={{ marginTop: 12 }}>
+      </Link>
+      <div style={{ marginTop: 12, display: 'flex', gap: 8, alignItems: 'center', flexWrap: 'wrap' }}>
+        <a
+          href={resource.url}
+          target="_blank"
+          rel="noopener noreferrer"
+          className="btn-primary"
+          style={{ minHeight: 36, padding: '0 14px', fontSize: 14 }}
+        >
+          访问官网 ↗
+        </a>
         <CompareToggle id={resource.id} name={resource.name} />
       </div>
       <div style={{ position: 'absolute', top: 12, right: 12 }}>

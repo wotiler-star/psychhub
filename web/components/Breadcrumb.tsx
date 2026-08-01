@@ -2,7 +2,8 @@ import Link from 'next/link';
 
 export interface Crumb {
   name: string;
-  href: string;
+  url?: string;
+  href?: string;
 }
 
 /**
@@ -26,9 +27,10 @@ export default function Breadcrumb({ items }: { items: Crumb[] }) {
       >
         {items.map((it, i) => {
           const last = i === items.length - 1;
+          const to = it.url ?? it.href ?? '#';
           return (
             <li
-              key={it.href}
+              key={to}
               style={{ display: 'inline-flex', alignItems: 'center', gap: 6 }}
             >
               {last ? (
@@ -36,7 +38,7 @@ export default function Breadcrumb({ items }: { items: Crumb[] }) {
                   {it.name}
                 </span>
               ) : (
-                <Link href={it.href} style={{ color: 'var(--muted)', textDecoration: 'none' }}>
+                <Link href={to} style={{ color: 'var(--muted)', textDecoration: 'none' }}>
                   {it.name}
                 </Link>
               )}
