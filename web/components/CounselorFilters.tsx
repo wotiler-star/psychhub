@@ -6,6 +6,10 @@ interface Props {
   specialties: string[];
   regions: string[];
   specialtyCounts?: Record<string, number>;
+  languages?: string[];
+  languageCounts?: Record<string, number>;
+  approaches?: string[];
+  approachCounts?: Record<string, number>;
 }
 
 const PRICE_TIERS = [
@@ -23,7 +27,15 @@ const RATING_TIERS = [
   { label: '★ 4.9 以上', value: '4.9' },
 ];
 
-export default function CounselorFilters({ specialties, regions, specialtyCounts }: Props) {
+export default function CounselorFilters({
+  specialties,
+  regions,
+  specialtyCounts,
+  languages,
+  languageCounts,
+  approaches,
+  approachCounts,
+}: Props) {
   const router = useRouter();
   const pathname = usePathname();
   const sp = useSearchParams();
@@ -37,6 +49,14 @@ export default function CounselorFilters({ specialties, regions, specialtyCounts
 
   function toggleSpecialty(s: string) {
     update('specialty', sp.get('specialty') === s ? '' : s);
+  }
+
+  function toggleLanguage(l: string) {
+    update('language', sp.get('language') === l ? '' : l);
+  }
+
+  function toggleApproach(a: string) {
+    update('approach', sp.get('approach') === a ? '' : a);
   }
 
   function toggleRemote() {
@@ -67,6 +87,8 @@ export default function CounselorFilters({ specialties, regions, specialtyCounts
   };
 
   const specialty = sp.get('specialty') ?? '';
+  const approach = sp.get('approach') ?? '';
+  const language = sp.get('language') ?? '';
   const region = sp.get('region') ?? '';
   const maxPrice = sp.get('maxPrice') ?? '';
   const minRating = sp.get('minRating') ?? '';
@@ -76,6 +98,8 @@ export default function CounselorFilters({ specialties, regions, specialtyCounts
   // 当前已激活的筛选条件（导航站常见「已选条件」区，可单独移除）
   const activeChips = [
     specialty ? { key: 'specialty', label: `议题：${specialty}` } : null,
+    approach ? { key: 'approach', label: `取向：${approach}` } : null,
+    language ? { key: 'language', label: `语言：${language}` } : null,
     region ? { key: 'region', label: `地区：${region}` } : null,
     maxPrice ? { key: 'maxPrice', label: `价格：≤ ${maxPrice} 元` } : null,
     minRating ? { key: 'minRating', label: `评分：★ ${minRating} 以上` } : null,
@@ -119,6 +143,60 @@ export default function CounselorFilters({ specialties, regions, specialtyCounts
           );
         })}
       </div>
+
+      {/* 流派取向分面（点击即筛选，含计数） */}
+      {approaches && approaches.length > 0 && (
+        <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap', marginBottom: 14, alignItems: 'center' }}>
+          <span style={{ fontSize: 13, color: 'var(--muted)' }}>取向：</span>
+          {approaches.map((a) => {
+            const active = approach === a;
+            const count = approachCounts?.[a];
+            return (
+              <button
+                key={a}
+                type="button"
+                onClick={() => toggleApproach(a)}
+                style={{
+                  ...chipBase,
+                  background: active ? 'var(--brand)' : 'var(--chip-bg)',
+                  color: active ? 'var(--btn-text)' : 'var(--brand)',
+                  fontWeight: active ? 700 : 500,
+                }}
+              >
+                {a}
+                {count != null && <span style={{ opacity: 0.7, marginLeft: 4, fontSize: 12 }}>({count})</span>}
+              </button>
+            );
+          })}
+        </div>
+      )}
+
+      {/* 语言分面（点击即筛选，含计数） */}
+      {languages && languages.length > 0 && (
+        <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap', marginBottom: 14, alignItems: 'center' }}>
+          <span style={{ fontSize: 13, color: 'var(--muted)' }}>语言：</span>
+          {languages.map((l) => {
+            const active = language === l;
+            const count = languageCounts?.[l];
+            return (
+              <button
+                key={l}
+                type="button"
+                onClick={() => toggleLanguage(l)}
+                style={{
+                  ...chipBase,
+                  background: active ? 'var(--brand)' : 'var(--chip-bg)',
+                  color: active ? 'var(--btn-text)' : 'var(--brand)',
+                  fontWeight: active ? 700 : 500,
+                }}
+              >
+                {l}
+                {count != null && <span style={{ opacity: 0.7, marginLeft: 4, fontSize: 12 }}>({count})</span>}
+              </button>
+            );
+          })}
+        </div>
+      )}
 
       {/* 地区 + 价格 + 远程 + 排序 */}
       <div style={{ display: 'flex', gap: 12, flexWrap: 'wrap', alignItems: 'center' }}>

@@ -1,6 +1,6 @@
 import { Injectable, OnModuleInit, OnModuleDestroy } from '@nestjs/common';
 import { PrismaClient } from '@prisma/client';
-import { createPrismaClient } from '../../prisma/prisma-extensions';
+import { createPrismaClient } from '../common/prisma-sqlite';
 
 /**
  * PrismaService：注入式数据库客户端。

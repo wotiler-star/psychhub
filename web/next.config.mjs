@@ -1,5 +1,9 @@
 /** @type {import('next').NextConfig} */
-const API_BASE = process.env.NEXT_PUBLIC_API_BASE || 'http://localhost:3001';
+// ⚠️ rewrites 的 destination 会在「构建期」固化进 routes-manifest.json，运行时无法再改。
+// 生产构建务必显式传入后端地址：API_BASE=http://127.0.0.1:3501 next build
+// 未显式指定时默认使用生产约定端口 3501，避免误固化为本地 dev 的 3001。
+const API_BASE =
+  process.env.API_BASE || process.env.NEXT_PUBLIC_API_BASE || 'http://127.0.0.1:3501';
 
 const nextConfig = {
   reactStrictMode: true,

@@ -2,6 +2,7 @@ import type { Metadata } from 'next';
 import Link from 'next/link';
 import { getResources } from '@/lib/api';
 import ResourceCard from '@/components/ResourceCard';
+import type { Resource } from '@/lib/types';
 import ResourceFilters from '@/components/ResourceFilters';
 import Pager from '@/components/Pager';
 import CompareBar from '@/components/CompareBar';
@@ -78,14 +79,25 @@ export default async function ResourcesPage({
   searchParams: Promise<SP>;
 }) {
   const sp = await searchParams;
-  const query = {
-    q: sp.q,
-    type: sp.type,
-    country: sp.country,
-    language: sp.language,
-    tag: sp.tag,
-  };
-  const raw = await getResources(query).catch(() => []);
+  const { q, type, country, language, tag } = sp;
+  const all = await getResources().catch(() => [] as Resource[]);
+
+  // 客户端分面过滤（数据量小，导航站常见做法：全量拉取后本地筛选/计数）
+  const ql = (q || '').toLowerCase();
+  const matchesText = (r: Resource) =>
+    !ql ||
+    r.name.toLowerCase().includes(ql) ||
+    (r.description || '').toLowerCase().includes(ql) ||
+    r.tags.some((t) => t.toLowerCase().includes(ql));
+
+  const raw = all.filter(
+    (r) =>
+      matchesText(r) &&
+      (!type || r.type === type) &&
+      (!country || r.country === country) &&
+      (!language || r.language === language) &&
+      (!tag || r.tags.includes(tag)),
+  );
 
   // 排序（导航站常见：精选优先 / 流量优先 / 名称 A-Z / 最新收录）
   const resources =
@@ -114,6 +126,17 @@ export default async function ResourcesPage({
   const typeCounts: Record<string, number> = {};
   for (const r of raw) typeCounts[r.type] = (typeCounts[r.type] ?? 0) + 1;
 
+  // 标签分面计数（排除 tag 维度，便于交叉筛选时其余标签仍有意义）
+  const tagCounts: Record<string, number> = {};
+  for (const r of all) {
+    if (!matchesText(r)) continue;
+    if (type && r.type !== type) continue;
+    if (country && r.country !== country) continue;
+    if (language && r.language !== language) continue;
+    for (const t of r.tags) tagCounts[t] = (tagCounts[t] ?? 0) + 1;
+  }
+  const tags = Object.keys(tagCounts).sort((a, b) => tagCounts[b] - tagCounts[a]);
+
   return (
     <div className="container-page" style={{ padding: '32px 20px 48px' }}>
       <JsonLdScript
@@ -129,7 +152,7 @@ export default async function ResourcesPage({
       </p>
 
       <FilterPanel>
-        <ResourceFilters countries={countries} languages={languages} typeCounts={typeCounts} />
+        <ResourceFilters countries={countries} languages={languages} typeCounts={typeCounts} tags={tags} tagCounts={tagCounts} />
       </FilterPanel>
 
       <div

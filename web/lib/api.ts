@@ -2,11 +2,18 @@ import type { Resource, Helpline, Assessment, Article, Counselor, Review, AuthUs
 
 // API 基地址解析：
 // - 浏览器端：使用相对路径 /api，由 next.config 的 rewrites 代理到后端（规避 CORS）
-// - 服务端（SSR）：必须绝对地址，默认 http://localhost:3001，可用 NEXT_PUBLIC_API_BASE 覆盖
+// - 服务端（SSR）：必须绝对地址。
+//   ⚠️ NEXT_PUBLIC_* 是「构建期内联」变量，打包后无法用运行时环境变量覆盖；
+//   因此优先读取运行时变量 API_BASE（无 NEXT_PUBLIC_ 前缀，Next 不会内联），
+//   使同一份产物可在不同服务器/端口上运行（生产默认 127.0.0.1:3501）。
 const isServer = typeof window === 'undefined';
 function apiBase(): string {
   if (!isServer) return '';
-  return process.env.NEXT_PUBLIC_API_BASE || 'http://localhost:3001';
+  return (
+    process.env.API_BASE ||
+    process.env.NEXT_PUBLIC_API_BASE ||
+    'http://127.0.0.1:3501'
+  );
 }
 
 async function getJson<T>(path: string): Promise<T> {

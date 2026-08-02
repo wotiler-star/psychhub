@@ -16,6 +16,8 @@ export const dynamic = 'force-dynamic';
 
 interface SP {
   specialty?: string;
+  approach?: string;
+  language?: string;
   region?: string;
   maxPrice?: string;
   minRating?: string;
@@ -87,12 +89,30 @@ export default async function CounselorsPage({
   const specialtyCounts: Record<string, number> = {};
   for (const c of all) for (const s of c.specialties) specialtyCounts[s] = (specialtyCounts[s] ?? 0) + 1;
 
+  const languages = Array.from(new Set(all.flatMap((c) => c.languages))).sort();
+  const approaches = Array.from(new Set(all.flatMap((c) => c.approach))).sort();
+  const languageCounts: Record<string, number> = {};
+  const approachCounts: Record<string, number> = {};
+  for (const c of all) {
+    for (const l of c.languages) languageCounts[l] = (languageCounts[l] ?? 0) + 1;
+    for (const a of c.approach) approachCounts[a] = (approachCounts[a] ?? 0) + 1;
+  }
+
   // 最低评分过滤（前端派生，后端 mock 无此参数）
   const minRating = sp.minRating ? Number(sp.minRating) : 0;
   const rated = minRating > 0 ? filtered.filter((c) => (c.rating ?? 0) >= minRating) : filtered;
 
+  // 语言 / 流派取向过滤（前端派生，后端 mock 无此参数）
+  const language = sp.language ?? '';
+  const approach = sp.approach ?? '';
   const sort = sp.sort ?? '';
-  const list = [...rated].sort((a, b) => {
+  const list = [
+    ...rated.filter(
+      (c) =>
+        (!language || c.languages.includes(language)) &&
+        (!approach || c.approach.includes(approach)),
+    ),
+  ].sort((a, b) => {
     if (sort === 'rating') return (b.rating ?? -1) - (a.rating ?? -1);
     if (sort === 'price') {
       const pa = a.pricePerSession ?? Infinity;
@@ -131,7 +151,15 @@ export default async function CounselorsPage({
       </p>
 
       <FilterPanel>
-        <CounselorFilters specialties={specialties} regions={regions} specialtyCounts={specialtyCounts} />
+        <CounselorFilters
+          specialties={specialties}
+          regions={regions}
+          specialtyCounts={specialtyCounts}
+          languages={languages}
+          languageCounts={languageCounts}
+          approaches={approaches}
+          approachCounts={approachCounts}
+        />
       </FilterPanel>
 
       <div
@@ -146,7 +174,7 @@ export default async function CounselorsPage({
       >
         <div style={{ fontSize: 14, color: 'var(--muted)' }}>
           共 {list.length} 位咨询师
-          {sp.specialty || sp.region || sp.maxPrice || sp.minRating || sp.remote || sp.q ? '（已按筛选条件）' : ''}
+          {sp.specialty || sp.approach || sp.language || sp.region || sp.maxPrice || sp.minRating || sp.remote || sp.q ? '（已按筛选条件）' : ''}
         </div>
         <div style={{ display: 'flex', gap: 8, alignItems: 'center', flexWrap: 'wrap' }}>
           <SearchBox paramName="q" placeholder="搜索咨询师 / 议题…" width={180} />

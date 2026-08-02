@@ -1,5 +1,5 @@
-import { Controller, Get, Param } from '@nestjs/common';
-import { ApiTags, ApiOperation } from '@nestjs/swagger';
+import { Controller, Get, Param, Query } from '@nestjs/common';
+import { ApiTags, ApiOperation, ApiQuery } from '@nestjs/swagger';
 import { AssessmentsService } from './assessments.service';
 
 @ApiTags('心理测评')

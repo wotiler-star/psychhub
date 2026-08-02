@@ -7,9 +7,11 @@ interface Props {
   countries: string[];
   languages: string[];
   typeCounts?: Record<string, number>;
+  tags?: string[];
+  tagCounts?: Record<string, number>;
 }
 
-export default function ResourceFilters({ countries, languages, typeCounts }: Props) {
+export default function ResourceFilters({ countries, languages, typeCounts, tags, tagCounts }: Props) {
   const router = useRouter();
   const pathname = usePathname();
   const sp = useSearchParams();
@@ -23,6 +25,10 @@ export default function ResourceFilters({ countries, languages, typeCounts }: Pr
 
   function toggleType(t: string) {
     update('type', sp.get('type') === t ? '' : t);
+  }
+
+  function toggleTag(t: string) {
+    update('tag', sp.get('tag') === t ? '' : t);
   }
 
   function clearAll() {
@@ -101,6 +107,33 @@ export default function ResourceFilters({ countries, languages, typeCounts }: Pr
           );
         })}
       </div>
+
+      {/* 标签分面（点击即筛选，含计数；与类型/国家/语言交叉组合） */}
+      {tags && tags.length > 0 && (
+        <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap', marginBottom: 14, alignItems: 'center' }}>
+          <span style={{ fontSize: 13, color: 'var(--muted)' }}>标签：</span>
+          {tags.map((t) => {
+            const active = tag === t;
+            const count = tagCounts?.[t];
+            return (
+              <button
+                key={t}
+                type="button"
+                onClick={() => toggleTag(t)}
+                style={{
+                  ...chipBase,
+                  background: active ? 'var(--brand)' : 'var(--chip-bg)',
+                  color: active ? 'var(--btn-text)' : 'var(--brand)',
+                  fontWeight: active ? 700 : 500,
+                }}
+              >
+                {t}
+                {count != null && <span style={{ opacity: 0.7, marginLeft: 4, fontSize: 12 }}>({count})</span>}
+              </button>
+            );
+          })}
+        </div>
+      )}
 
       {/* 搜索 + 精确筛选 */}
       <div style={{ display: 'flex', gap: 12, flexWrap: 'wrap', alignItems: 'center' }}>
