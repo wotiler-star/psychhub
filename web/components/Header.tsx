@@ -3,6 +3,7 @@ import { useState, useEffect } from 'react';
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 import { useAuth } from '@/components/AuthProvider';
+import { useMembership } from '@/lib/membership';
 
 // 主导航：一级栏目 ≤ 7（原则 R2.1：米勒法则），全部能回链业务目标
 const NAV = [
@@ -17,6 +18,7 @@ const NAV = [
 
 export default function Header() {
   const { user, loading, logout } = useAuth();
+  const { state, tier } = useMembership();
   const [theme, setTheme] = useState<'light' | 'dark'>('light');
   const [navOpen, setNavOpen] = useState(false);
   const pathname = usePathname();
@@ -132,6 +134,46 @@ export default function Header() {
               >
                 我的
               </Link>
+              {state.tier !== 'free' ? (
+                <Link
+                  href="/membership"
+                  className="chip"
+                  style={{
+                    background: `${tier.color}1a`,
+                    color: tier.color,
+                    cursor: 'pointer',
+                    border: '1px solid transparent',
+                    marginLeft: 4,
+                    minHeight: 36,
+                    padding: '0 12px',
+                    fontSize: 14,
+                    fontWeight: 600,
+                    display: 'inline-flex',
+                    alignItems: 'center',
+                    textDecoration: 'none',
+                  }}
+                >
+                  {tier.name}
+                </Link>
+              ) : (
+                <Link
+                  href="/membership"
+                  style={{
+                    marginLeft: 4,
+                    padding: '8px 12px',
+                    borderRadius: 8,
+                    color: 'var(--brand)',
+                    fontSize: 15,
+                    fontWeight: 600,
+                    minHeight: 36,
+                    display: 'inline-flex',
+                    alignItems: 'center',
+                    textDecoration: 'none',
+                  }}
+                >
+                  会员
+                </Link>
+              )}
               <button
                 onClick={() => logout()}
                 className="chip"
@@ -148,9 +190,28 @@ export default function Header() {
               </button>
             </>
           ) : !loading ? (
-            <Link className="btn-primary" href="/login" style={{ marginLeft: 6 }}>
-              登录
-            </Link>
+            <>
+              <Link
+                href="/membership"
+                style={{
+                  marginLeft: 6,
+                  padding: '8px 12px',
+                  borderRadius: 8,
+                  color: 'var(--brand)',
+                  fontSize: 15,
+                  fontWeight: 600,
+                  minHeight: 44,
+                  display: 'inline-flex',
+                  alignItems: 'center',
+                  textDecoration: 'none',
+                }}
+              >
+                会员
+              </Link>
+              <Link className="btn-primary" href="/login" style={{ marginLeft: 6 }}>
+                登录
+              </Link>
+            </>
           ) : null}
           {/* 全站搜索框（GET 跳转到 /search，SSR 友好） */}
           <form action="/search" method="get" style={{ display: 'flex', alignItems: 'center', marginLeft: 4 }}>
