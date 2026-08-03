@@ -9,7 +9,7 @@ import {
   type MembershipTier,
   type TierDef,
 } from '@/lib/membership';
-import MockCheckout from '@/components/MockCheckout';
+import CheckoutModal from '@/components/CheckoutModal';
 
 export default function MembershipExplorer() {
   const { state, upgradeTo } = useMembership();
@@ -230,7 +230,7 @@ export default function MembershipExplorer() {
       )}
 
       {checkout && (
-        <MockCheckout
+        <CheckoutModal
           open={!!checkout}
           tier={checkout}
           billing={billing}
