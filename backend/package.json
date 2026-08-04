@@ -2,7 +2,7 @@
   "name": "psychology-hub-backend",
   "version": "1.0.0",
   "private": true,
-  "description": "心理学聚合平台后端 API（NestJS + Prisma + PostgreSQL）",
+  "description": "心理学聚合平台后端 API（NestJS + Prisma + MySQL/MariaDB）",
   "scripts": {
     "build": "nest build",
     "start": "node dist/main.js",
@@ -13,9 +13,10 @@
     "prisma:deploy": "prisma migrate deploy",
     "seed": "ts-node --compiler-options {\"module\":\"CommonJS\"} prisma/seed.ts",
     "prisma:generate:mysql": "prisma generate --schema prisma/schema.mysql.prisma",
-    "prisma:push:mysql": "prisma db push --schema prisma/schema.mysql.prisma --skip-generate",
+    "prisma:push:mysql": "prisma db push --schema prisma/schema.mysql.prisma",
     "prisma:migrate:mysql": "prisma migrate dev --schema prisma/schema.mysql.prisma",
-    "db:setup:mysql": "prisma db push --schema prisma/schema.mysql.prisma --skip-generate && npm run seed"
+    "db:setup:mysql": "prisma db push --schema prisma/schema.mysql.prisma && npm run seed",
+    "build:mysql": "prisma generate --schema prisma/schema.mysql.prisma && nest build",
     "test": "jest",
     "test:watch": "jest --watch"
   },

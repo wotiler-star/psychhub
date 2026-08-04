@@ -83,8 +83,50 @@ function transformArgs(args: any): any {
   return out;
 }
 
+/**
+ * 归一化 MySQL/MariaDB 连接串 —— 针对 Hostinger 共享云数据库做适配：
+ *   - 仅对 mysql:// 生效，SQLite 等原样返回（本地开发不受影响）
+ *   - 共享型 MySQL 连接数有限，缺省给保守上限并硬性封顶（避免耗尽 Hostinger 连接配额）
+ *   - 补齐 pool / connect / socket 超时，缓解跨网（腾讯云 → Hostinger）偶发抖动
+ *   - DATABASE_SSL=true 时追加 sslaccept=strict（Hostinger 远程 MySQL 要求加密连接）
+ * 解析失败则回退原始串，不影响其它环境。
+ */
+function normalizeMysqlUrl(raw: string): string {
+  if (!/^mysql:/i.test(raw)) return raw;
+  let u: URL;
+  try {
+    u = new URL(raw);
+  } catch {
+    return raw;
+  }
+  const p = new URLSearchParams(u.search);
+  const clamp = (k: string, def: number) => {
+    const cur = Number(p.get(k));
+    if (!p.has(k) || Number.isNaN(cur)) p.set(k, String(def));
+    else p.set(k, String(Math.min(cur, 10))); // 共享主机硬性封顶 10
+  };
+  // 并发连接上限：缺省 DATABASE_CONNECTION_LIMIT(默认5)，最高 10
+  clamp('connection_limit', Number(process.env.DATABASE_CONNECTION_LIMIT) || 5);
+  if (!p.has('pool_timeout')) p.set('pool_timeout', '20');
+  if (!p.has('connect_timeout')) p.set('connect_timeout', '20');
+  if (!p.has('socket_timeout')) p.set('socket_timeout', '30');
+  // Hostinger 远程 MySQL 默认要求 TLS；由环境变量显式开启，避免误连明文
+  if (process.env.DATABASE_SSL === 'true' && !p.has('sslaccept')) {
+    p.set('sslaccept', 'strict');
+  }
+  u.search = '';
+  const base = u.toString();
+  const qs = p.toString();
+  return qs ? `${base}?${qs}` : base;
+}
+
 export function createPrismaClient(): PrismaClient {
-  return new PrismaClient().$extends({
+  const rawUrl = process.env.DATABASE_URL;
+  const url = rawUrl ? normalizeMysqlUrl(rawUrl) : undefined;
+  const prisma = url
+    ? new PrismaClient({ datasources: { db: { url } } })
+    : new PrismaClient();
+  return prisma.$extends({
     query: {
       $allOperations({ args, query }: any) {
         const newArgs = transformArgs(args);

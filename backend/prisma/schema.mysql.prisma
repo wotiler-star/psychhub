@@ -7,6 +7,8 @@
 //     src/common/prisma-sqlite.ts 的 $extends 层统一序列化/反序列化（对 MySQL 完全兼容）。
 // 生成客户端：prisma generate --schema prisma/schema.mysql.prisma
 // 建表：      prisma db push  --schema prisma/schema.mysql.prisma（或执行 migrations/mysql/0001_init.sql）
+// 连接适配：  connection_limit / 超时 / SSL 由后端 createPrismaClient 针对 Hostinger 共享库
+//            自动归一化（见 src/common/prisma-sqlite.ts 的 normalizeMysqlUrl），环境变量 DATABASE_SSL / DATABASE_CONNECTION_LIMIT 可调。
 
 generator client {
   provider = "prisma-client-js"

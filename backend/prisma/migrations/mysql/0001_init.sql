@@ -1,3 +1,8 @@
+-- 心理学聚合平台 · Hostinger MySQL/MariaDB 生产建表脚本
+-- 前置：请先在 Hostinger hPanel「数据库」中创建数据库（共享主机不允许用 SQL 建库）。
+-- 在 phpMyAdmin 选中该库后，直接执行本脚本即可（表名无需改动）。
+-- 兼容 MariaDB 10.6+，字符集 utf8mb4。也可用命令：prisma db push --schema prisma/schema.mysql.prisma
+
 -- CreateTable
 CREATE TABLE `Resource` (
     `id` VARCHAR(191) NOT NULL,
