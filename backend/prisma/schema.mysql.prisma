@@ -1,0 +1,150 @@
+// 心理学聚合平台 · 数据模型（Prisma + MySQL / MariaDB，生产用）
+// 说明：本文件为「生产数据源 = Hostinger MySQL/MariaDB」专用 schema。
+// 与本地开发用的 schema.prisma（SQLite）模型完全一致，仅 provider 与字段原生类型不同：
+//   - provider = "mysql"
+//   - 长文本字段改为 @db.Text（MySQL 的 varchar 默认仅 191，长内容会截断）
+//   - 数组/JSON 仍按项目约定存为 "|a|b|" 字符串 / JSON 字符串，由
+//     src/common/prisma-sqlite.ts 的 $extends 层统一序列化/反序列化（对 MySQL 完全兼容）。
+// 生成客户端：prisma generate --schema prisma/schema.mysql.prisma
+// 建表：      prisma db push  --schema prisma/schema.mysql.prisma（或执行 migrations/mysql/0001_init.sql）
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "mysql"
+  url      = env("DATABASE_URL")
+}
+
+model Resource {
+  id           String       @id @default(cuid())
+  name         String
+  url          String       @db.Text
+  type         String
+  country      String?
+  language     String?
+  description  String?      @db.Text
+  trafficLevel String? // 量级描述，如 "2330万/月"
+  suitableFor  String?      @db.Text
+  tags         String       @db.Text // 数组以 "|a|b|" 形式存储，经 Prisma 扩展还原为数组
+  featured     Boolean      @default(false)
+  createdAt    DateTime     @default(now())
+  updatedAt    DateTime     @updatedAt
+
+  @@index([type])
+  @@index([country])
+  @@index([featured])
+  @@unique([name])
+}
+
+model Helpline {
+  id          String   @id @default(cuid())
+  name        String
+  country     String
+  language    String
+  phone       String?
+  url         String?  @db.Text
+  description String?  @db.Text
+  category    String? // CRISIS / SUPPORT / LOW_COST
+  createdAt   DateTime @default(now())
+
+  @@index([country])
+  @@index([language])
+  @@unique([name])
+}
+
+model Assessment {
+  id            String   @id @default(cuid())
+  slug          String   @unique
+  title         String
+  description   String?  @db.Text
+  type          String? // DEPRESSION / ANXIETY / PERSONALITY
+  questions     String   @db.Text // JSON 字符串，经 Prisma 扩展还原为对象数组
+  interpretation String? @db.Text // JSON 字符串，经 Prisma 扩展还原为对象
+  source        String?  @db.Text // 量表来源与版权说明
+  createdAt     DateTime @default(now())
+}
+
+model Article {
+  id          String   @id @default(cuid())
+  slug        String   @unique
+  title       String
+  excerpt     String?  @db.Text // 摘要
+  content     String   @db.Text // 正文（纯文本，按段落分隔）
+  category    String? // POPSCI 科普 / RESEARCH 研究 / NEWS 资讯
+  tags        String   @db.Text // 数组以 "|a|b|" 形式存储，经 Prisma 扩展还原为数组
+  sourceName  String?  @db.Text // 来源站点/作者
+  sourceUrl   String?  @db.Text // 原文链接
+  author      String?  @db.Text
+  coverImage  String?  @db.Text // 封面图（可选）
+  publishedAt DateTime @default(now())
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  @@index([category])
+  @@index([publishedAt])
+}
+
+// 咨询师 / 执业者目录（三期「转介层」核心实体）
+model Counselor {
+  id              String   @id @default(cuid())
+  name            String
+  title           String?
+  specialties     String   @db.Text // 擅长议题（"|抑郁|焦虑|"，经 Prisma 扩展还原为数组）
+  approach        String   @db.Text // 取向/流派（"|CBT|..."，经 Prisma 扩展还原为数组）
+  region          String? // 所在地区（含「远程（全国）」「海外（北美）」等）
+  remote          Boolean  @default(false)
+  languages       String   @db.Text // 语言（"|中文|英文|"，经 Prisma 扩展还原为数组）
+  pricePerSession Int? // 单次参考价（人民币）
+  currency        String   @default("CNY")
+  org             String?  @db.Text // 所属机构 / 平台
+  bio             String?  @db.Text
+  avatar          String?  @db.Text
+  bookingUrl      String?  @db.Text // 外部预约入口（转介）
+  rating          Float? // 参考评分
+  yearsExperience Int? // 从业年限
+  tags            String   @db.Text // 标签（"|a|b|"，经 Prisma 扩展还原为数组）
+  featured        Boolean  @default(false)
+  reviews         Review[]
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+
+  @@index([region])
+  @@index([featured])
+  @@unique([name])
+}
+
+// 咨询师评价 / 社区 UGC（三期「社区 + 咨询师评价」核心实体）
+model Review {
+  id          String    @id @default(cuid())
+  counselorId String
+  counselor   Counselor @relation(fields: [counselorId], references: [id], onDelete: Cascade)
+  authorName  String
+  authorId    String?
+  rating      Int // 1-5 星
+  content     String    @db.Text
+  status      String    @default("PUBLISHED") // PUBLISHED / HIDDEN（审核 / 合规）
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
+
+  @@index([counselorId])
+  @@index([createdAt])
+}
+
+// 账号 / 用户（三期「账号体系」核心实体）
+// 密码以 bcrypt 哈希存储，绝不落明文；JWT 仅含非敏感字段（id/email/name/role）
+model User {
+  id                String    @id @default(cuid())
+  email             String    @unique
+  name              String
+  passwordHash      String
+  role              String    @default("USER") // USER / ADMIN
+  // ── 会员体系（前端 localStorage 之外，服务端落库，便于跨端一致与未来订阅回执写入）──
+  membershipTier    String    @default("free") // free / basic / pro / ultimate
+  membershipExpiresAt DateTime? // 会员到期时间（订阅制）
+  createdAt         DateTime  @default(now())
+  updatedAt         DateTime  @updatedAt
+
+  @@index([email])
+}

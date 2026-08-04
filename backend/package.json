@@ -12,6 +12,10 @@
     "prisma:migrate": "prisma migrate dev",
     "prisma:deploy": "prisma migrate deploy",
     "seed": "ts-node --compiler-options {\"module\":\"CommonJS\"} prisma/seed.ts",
+    "prisma:generate:mysql": "prisma generate --schema prisma/schema.mysql.prisma",
+    "prisma:push:mysql": "prisma db push --schema prisma/schema.mysql.prisma --skip-generate",
+    "prisma:migrate:mysql": "prisma migrate dev --schema prisma/schema.mysql.prisma",
+    "db:setup:mysql": "prisma db push --schema prisma/schema.mysql.prisma --skip-generate && npm run seed"
     "test": "jest",
     "test:watch": "jest --watch"
   },

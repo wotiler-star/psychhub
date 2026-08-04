@@ -2,7 +2,10 @@ import { PrismaClient } from '@prisma/client';
 import { DB_ARRAY_DELIM } from './db-array.util';
 
 /**
- * SQLite 兼容层（Prisma 5 的 SQLite 连接器不支持 enum / 标量数组 / Json）。
+ * 数组 / JSON 兼容层（对 SQLite 开发库与 MySQL/MariaDB 生产库均适用）。
+ * SQLite 连接器不支持标量数组 / Json；MySQL 虽原生支持 Json，但本项目为
+ * 「本地 SQLite / 生产 MySQL」双库共用同一套代码，统一以 "|a|b|" 字符串与
+ * JSON 字符串存储，避免为两套 provider 维护两份序列化逻辑。
  * 为保持对外 API 契约（数组 / 对象），这里在读写时做转换：
  *   - 数组字段（tags/specialties/approach/languages）：存为 "|a|b|" 字符串，读出还原为数组
  *   - 对象字段（questions/interpretation）：存为 JSON 字符串，读出 JSON.parse 还原
