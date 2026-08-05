@@ -10,6 +10,7 @@ import ViewToggle from '@/components/ViewToggle';
 import BookmarkButton from '@/components/BookmarkButton';
 import CompareToggle from '@/components/CompareToggle';
 import FilterPanel from '@/components/FilterPanel';
+import ResourceSubNav from '@/components/ResourceSubNav';
 import { RESOURCE_TYPE_META } from '@/lib/format';
 import { breadcrumbJsonLd, JsonLdScript } from '@/lib/jsonld';
 import EmptyState from '@/components/EmptyState';
@@ -146,10 +147,12 @@ export default async function ResourcesPage({
         ])}
       />
       <h1 style={{ fontSize: 28, margin: '0 0 6px' }}>心理资源导航</h1>
-      <p style={{ color: 'var(--muted)', fontSize: 16, margin: '0 0 24px', maxWidth: 680 }}>
+      <p style={{ color: 'var(--muted)', fontSize: 16, margin: '0 0 16px', maxWidth: 680 }}>
         聚合全球优质心理学网站，按类型、国家与语言筛选。点击任意卡片直达原站。
         （数据源自《全球心理学网站 TOP50 调研报告》）
       </p>
+
+      <ResourceSubNav />
 
       <FilterPanel>
         <ResourceFilters countries={countries} languages={languages} typeCounts={typeCounts} tags={tags} tagCounts={tagCounts} />
