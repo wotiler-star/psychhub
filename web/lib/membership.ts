@@ -3,6 +3,7 @@
 // 后端 MembershipModule 骨架仅供将来真后端对接（见 backend/src/membership）。
 import { useCallback, useEffect, useState } from 'react';
 import { useAuth } from '@/components/AuthProvider';
+import { getMembership, subscribeMembership, type MembershipRemote } from './api';
 
 // ===== 会员等级定义 =====
 export type MembershipTier = 'free' | 'basic' | 'pro' | 'ultimate';
@@ -243,15 +244,41 @@ export function useMembership(): MembershipApi {
   const [state, setState] = useState<MembershipState>(() => DEFAULT_STATE());
   const [ready, setReady] = useState(false);
 
+  // 服务端权威合并：仅当后端返回「有效订阅（未过期）」时才以服务端档位 / 到期覆盖本地，
+  // 避免后端未上线 / 订阅丢失时把本地已购档位错误降级为 free。
+  const reconcileFromServer = useCallback(
+    (remote: MembershipRemote) => {
+      const cur = readState(userId);
+      const serverActive =
+        !!remote.expiresAt && new Date(remote.expiresAt).getTime() > Date.now();
+      if (!serverActive) return;
+      const next: MembershipState = {
+        ...cur,
+        tier: (remote.tier as MembershipTier) || cur.tier,
+        expiresAt: remote.expiresAt,
+      };
+      writeState(userId, next);
+    },
+    [userId],
+  );
+
   useEffect(() => {
     const sync = () => setState(readState(userId));
     sync();
     setReady(true);
     listeners.add(sync);
+    // 登录后从服务端拉取会员态（后端未上线 / 未登录时静默失败，回退本地）
+    if (userId) {
+      getMembership()
+        .then((m) => {
+          if (m) reconcileFromServer(m);
+        })
+        .catch(() => {});
+    }
     return () => {
       listeners.delete(sync);
     };
-  }, [userId]);
+  }, [userId, reconcileFromServer]);
 
   const signInToday = useCallback(() => {
     const cur = readState(userId);
@@ -311,8 +338,15 @@ export function useMembership(): MembershipApi {
         ].slice(0, 30),
       };
       writeState(userId, next);
+      // 最佳努力同步到真实后端（Hostinger MySQL + 支付回执）：
+      // 后端未上线（当前 mock API 返回 404）时静默失败，本地状态已即时生效，不阻塞用户。
+      subscribeMembership({ tier, billing, provider: 'mock' })
+        .then((remote) => {
+          if (remote) reconcileFromServer(remote);
+        })
+        .catch(() => {});
     },
-    [userId],
+    [userId, reconcileFromServer],
   );
 
   const redeem = useCallback(

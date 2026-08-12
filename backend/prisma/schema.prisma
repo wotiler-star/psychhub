@@ -131,13 +131,35 @@ model Review {
 // 账号 / 用户（三期「账号体系」核心实体）
 // 密码以 bcrypt 哈希存储，绝不落明文；JWT 仅含非敏感字段（id/email/name/role）
 model User {
-  id           String   @id @default(cuid())
-  email        String   @unique
-  name         String
-  passwordHash String
-  role         String   @default("USER") // USER / ADMIN
-  createdAt    DateTime @default(now())
-  updatedAt    DateTime @updatedAt
+  id                String    @id @default(cuid())
+  email             String    @unique
+  name              String
+  passwordHash      String
+  role              String    @default("USER") // USER / ADMIN
+  // ── 会员体系（前端 localStorage 之外，服务端落库，便于跨端一致与订阅回执写入）──
+  membershipTier    String    @default("free") // free / basic / pro / ultimate
+  membershipExpiresAt DateTime? // 会员到期时间（订阅制）
+  createdAt         DateTime  @default(now())
+  updatedAt         DateTime  @updatedAt
 
   @@index([email])
+}
+
+// 订阅记录（会员开通/升级的审计与回执落库；当前 mock 支付直接置 active，
+// 接真实网关后由 Webhook 校验支付回执 paymentRef 再置 active）
+model Subscription {
+  id          String   @id @default(cuid())
+  userId      String
+  tier        String // free / basic / pro / ultimate
+  billing     String // monthly / yearly
+  status      String   @default("active") // pending / active / cancelled / expired
+  provider    String? // mock / stripe / wechat
+  paymentRef  String? // 支付回执 / 交易号（真实网关回执校验用）
+  amount      Int? // 实付金额（分 or 元，按业务约定）
+  expiresAt   DateTime?
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  @@index([userId])
+  @@index([status])
 }

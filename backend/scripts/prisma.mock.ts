@@ -138,6 +138,18 @@ class Delegate {
     return row;
   }
 
+  async update(args: any): Promise<Row> {
+    const idx = this.rows.findIndex((r) => matchWhere(r, args.where));
+    if (idx === -1) throw new Error('MockPrisma: 未找到待更新的记录 ' + JSON.stringify(args.where));
+    const merged = {
+      ...this.rows[idx],
+      ...args.data,
+      updatedAt: args.data.updatedAt ?? new Date(),
+    };
+    this.rows[idx] = merged;
+    return merged;
+  }
+
   async count(args: any = {}): Promise<number> {
     return this.rows.filter((r) => matchWhere(r, args.where)).length;
   }
@@ -157,6 +169,7 @@ export class MockPrismaService {
   counselor!: Delegate;
   review!: Delegate;
   user!: Delegate;
+  subscription!: Delegate;
 
   constructor() {
     const resRows = resources.map((r) => ({ ...r, featured: !!r.featured }));
@@ -175,6 +188,8 @@ export class MockPrismaService {
         name: '演示用户',
         passwordHash: demoHash,
         role: 'USER',
+        membershipTier: 'free',
+        membershipExpiresAt: null,
         createdAt: new Date(),
         updatedAt: new Date(),
       },
@@ -187,6 +202,7 @@ export class MockPrismaService {
     this.counselor = new Delegate(counselorRows, this);
     this.review = new Delegate(reviewRows, this);
     this.user = new Delegate(userRows, this);
+    this.subscription = new Delegate([], this);
   }
 
   // review include: { counselor: { select: { name: true } } }

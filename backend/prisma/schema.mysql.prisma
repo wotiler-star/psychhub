@@ -150,3 +150,22 @@ model User {
 
   @@index([email])
 }
+
+// 订阅记录（会员开通/升级的审计与回执落库；当前 mock 支付直接置 active，
+// 接真实网关后由 Webhook 校验支付回执 paymentRef 再置 active）
+model Subscription {
+  id          String    @id @default(cuid())
+  userId      String
+  tier        String // free / basic / pro / ultimate
+  billing     String // monthly / yearly
+  status      String    @default("active") // pending / active / cancelled / expired
+  provider    String? // mock / stripe / wechat
+  paymentRef  String?   @db.Text // 支付回执 / 交易号（真实网关回执校验用）
+  amount      Int? // 实付金额
+  expiresAt   DateTime?
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
+
+  @@index([userId])
+  @@index([status])
+}

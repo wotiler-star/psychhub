@@ -1,8 +1,10 @@
-import { Body, Controller, Get, Post, Req, UnauthorizedException } from '@nestjs/common';
+import { Body, Controller, Get, Post, Req, UseGuards } from '@nestjs/common';
+import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
 import { MembershipService } from './membership.service';
 import { SubscribeDto } from './dto/subscribe.dto';
+import type { MembershipStatus } from './membership.service';
 
-@Controller('api/membership')
+@Controller('membership')
 export class MembershipController {
   constructor(private readonly svc: MembershipService) {}
 
@@ -12,17 +14,19 @@ export class MembershipController {
     return this.svc.getTiers();
   }
 
-  /** 当前登录用户的会员状态（需 JWT，req.user 由 JwtStrategy 注入） */
+  /** 当前登录用户的会员状态（需 JWT Cookie，由 JwtAuthGuard 注入 req.user） */
+  @UseGuards(JwtAuthGuard)
   @Get('me')
-  getMe(@Req() req: any) {
-    const userId = req.user?.userId ?? req.user?.sub;
-    if (!userId) throw new UnauthorizedException('未登录');
+  getMe(@Req() req: any): MembershipStatus {
+    const userId = req.user?.id ?? req.user?.sub;
     return this.svc.getMyMembership(userId);
   }
 
-  /** 开通/升级订阅（占位，待接入支付） */
+  /** 开通 / 升级订阅：仅登录用户自身可操作，userId 以令牌为准（忽略客户端传入） */
+  @UseGuards(JwtAuthGuard)
   @Post('subscribe')
-  subscribe(@Body() dto: SubscribeDto) {
-    return this.svc.subscribe(dto);
+  subscribe(@Req() req: any, @Body() dto: SubscribeDto) {
+    const userId = req.user?.id ?? req.user?.sub;
+    return this.svc.subscribe(userId, dto);
   }
 }

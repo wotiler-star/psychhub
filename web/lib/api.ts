@@ -205,6 +205,54 @@ export async function logout(): Promise<void> {
   await fetch(`${apiBase()}/api/auth/logout`, { method: 'POST', cache: 'no-store' });
 }
 
+// === 会员态（后端落库；当前生产为 mock API 时静默回退本地）===
+export interface MembershipRemote {
+  tier: string;
+  expiresAt: string | null;
+  subscriptions: {
+    id: string;
+    tier: string;
+    billing: string;
+    status: string;
+    provider: string | null;
+    paymentRef: string | null;
+    amount: number | null;
+    expiresAt: string | null;
+    createdAt: string;
+  }[];
+}
+
+/** 拉取当前登录用户的服务端会员态（未登录 / 后端未上线 → 返回 null） */
+export async function getMembership(): Promise<MembershipRemote | null> {
+  try {
+    const d = await getJson<MembershipRemote>('/api/membership/me');
+    return d ?? null;
+  } catch {
+    return null;
+  }
+}
+
+/** 开通 / 升级订阅：把支付结果（含回执）写给真实后端；失败（mock API 404 等）返回 null */
+export async function subscribeMembership(input: {
+  tier: string;
+  billing: string;
+  provider?: string;
+  paymentRef?: string;
+}): Promise<MembershipRemote | null> {
+  try {
+    const res = await fetch(`${apiBase()}/api/membership/subscribe`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(input),
+      cache: 'no-store',
+    });
+    if (!res.ok) return null;
+    return (await res.json()) as MembershipRemote;
+  } catch {
+    return null;
+  }
+}
+
 // === 站点收录提交（UGC）===
 export interface SubmissionInput {
   kind: 'resource' | 'counselor';
