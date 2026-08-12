@@ -6,6 +6,10 @@ import type { Resource, ResourceType } from '@/lib/types';
 import { RESOURCE_TYPES, RESOURCE_TYPE_META } from '@/lib/format';
 import ResourceCard from '@/components/ResourceCard';
 import ResourceSubNav from '@/components/ResourceSubNav';
+import ResourceFilters from '@/components/ResourceFilters';
+import FilterPanel from '@/components/FilterPanel';
+import ViewToggle from '@/components/ViewToggle';
+import CompareBar from '@/components/CompareBar';
 import Breadcrumb from '@/components/Breadcrumb';
 import BookmarkButton from '@/components/BookmarkButton';
 import CompareToggle from '@/components/CompareToggle';
@@ -17,6 +21,7 @@ import {
   JsonLdScript,
 } from '@/lib/jsonld';
 import { paginate } from '@/lib/paginate';
+import { sortResources } from '@/lib/resourceSort';
 
 export const dynamic = 'force-dynamic';
 
@@ -99,30 +104,42 @@ async function SubBoard({ type, sp }: { type: ResourceType; sp: SP }) {
   const all = await getResources({ type }).catch(() => [] as Resource[]);
 
   const ql = (sp.q || '').toLowerCase();
+  const matchesText = (r: Resource) =>
+    !ql ||
+    r.name.toLowerCase().includes(ql) ||
+    (r.description || '').toLowerCase().includes(ql) ||
+    r.tags.some((t) => t.toLowerCase().includes(ql));
+
+  // 子版块类型由路由固定，仅对国家/语言/标签/搜索做交叉筛选
   const raw = all.filter(
     (r) =>
-      !ql ||
-      r.name.toLowerCase().includes(ql) ||
-      (r.description || '').toLowerCase().includes(ql) ||
-      r.tags.some((t) => t.toLowerCase().includes(ql)),
+      matchesText(r) &&
+      (!sp.country || r.country === sp.country) &&
+      (!sp.language || r.language === sp.language) &&
+      (!sp.tag || r.tags.includes(sp.tag)),
   );
 
-  const resources =
-    sp.sort === 'traffic'
-      ? [...raw].sort(
-          (a, b) =>
-            (Number(b.featured) - Number(a.featured)) ||
-            (b.trafficLevel || '').localeCompare(a.trafficLevel || ''),
-        )
-      : sp.sort === 'name'
-        ? [...raw].sort((a, b) => a.name.localeCompare(b.name))
-        : sp.sort === 'newest'
-          ? [...raw].sort((a, b) => (b.createdAt || '').localeCompare(a.createdAt || ''))
-          : [...raw].sort((a, b) => Number(!!b.featured) - Number(!!a.featured));
+  const resources = sortResources(raw, sp.sort);
 
   const page = Number(sp.page) || 1;
   const { pageItems, totalPages } = paginate(resources, page, 12);
   const basePath = `/resources/${type.toLowerCase()}`;
+
+  // 国家 / 语言 / 标签分面（从当前类型全量派生，便于交叉筛选计数）
+  const countries = Array.from(
+    new Set(raw.map((r) => r.country).filter((c): c is string => !!c)),
+  ).sort();
+  const languages = Array.from(
+    new Set(raw.map((r) => r.language).filter((c): c is string => !!c)),
+  ).sort();
+  const tagCounts: Record<string, number> = {};
+  for (const r of all) {
+    if (!matchesText(r)) continue;
+    if (sp.country && r.country !== sp.country) continue;
+    if (sp.language && r.language !== sp.language) continue;
+    for (const t of r.tags) tagCounts[t] = (tagCounts[t] ?? 0) + 1;
+  }
+  const tags = Object.keys(tagCounts).sort((a, b) => tagCounts[b] - tagCounts[a]);
 
   return (
     <div className="container-page" style={{ padding: '32px 20px 48px' }}>
@@ -174,12 +191,74 @@ async function SubBoard({ type, sp }: { type: ResourceType; sp: SP }) {
 
       <ResourceSubNav active={type.toLowerCase()} />
 
-      <div style={{ color: 'var(--muted)', fontSize: 14, margin: '4px 0 16px' }}>
-        共 {resources.length} 个资源
+      <FilterPanel>
+        <ResourceFilters
+          hideType
+          countries={countries}
+          languages={languages}
+          tags={tags}
+          tagCounts={tagCounts}
+        />
+      </FilterPanel>
+
+      <div
+        style={{
+          display: 'flex',
+          justifyContent: 'space-between',
+          alignItems: 'center',
+          margin: '4px 0 16px',
+          gap: 12,
+          flexWrap: 'wrap',
+        }}
+      >
+        <div style={{ color: 'var(--muted)', fontSize: 14 }}>
+          共 {resources.length} 个资源
+          {sp.country || sp.language || sp.tag || sp.q ? '（已按筛选条件）' : ''}
+        </div>
+        <ViewToggle />
       </div>
 
       {pageItems.length === 0 ? (
-        <EmptyState title="该子版块暂无资源" hint="试试其它子版块，或到「提交收录」推荐优质站点。" />
+        <EmptyState title="该子版块暂无匹配资源" hint="试试清除筛选条件，或到「提交收录」推荐优质站点。" />
+      ) : sp.view === 'list' ? (
+        <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
+          {pageItems.map((r) => {
+            const rmeta = RESOURCE_TYPE_META[r.type] ?? { label: r.type, chip: '' };
+            return (
+              <div
+                key={r.id}
+                className="card"
+                style={{ display: 'flex', alignItems: 'center', gap: 12, padding: '12px 16px', flexWrap: 'wrap' }}
+              >
+                <div style={{ flex: 1, minWidth: 200 }}>
+                  <Link href={`/resources/${r.id}`} style={{ color: 'var(--ink)', textDecoration: 'none', fontWeight: 600 }}>
+                    {r.name}
+                  </Link>
+                  <span style={{ fontSize: 13, color: 'var(--muted)', marginLeft: 8 }}>
+                    {[r.country, r.trafficLevel].filter(Boolean).join(' · ')}
+                    {' '}
+                    <a href={r.url} target="_blank" rel="noopener noreferrer" style={{ color: 'var(--brand)' }}>
+                      访问 ↗
+                    </a>
+                  </span>
+                </div>
+                <span className={`chip ${rmeta.chip}`} style={{ flexShrink: 0 }}>
+                  {rmeta.label}
+                </span>
+                <div style={{ display: 'flex', gap: 8, flexShrink: 0, alignItems: 'center' }}>
+                  <CompareToggle id={r.id} name={r.name} />
+                  <BookmarkButton
+                    type="resource"
+                    id={r.id}
+                    title={r.name}
+                    url={r.url}
+                    subtitle={r.description ?? undefined}
+                  />
+                </div>
+              </div>
+            );
+          })}
+        </div>
       ) : (
         <div
           style={{
@@ -195,6 +274,19 @@ async function SubBoard({ type, sp }: { type: ResourceType; sp: SP }) {
       )}
 
       <Pager basePath={basePath} params={sp} page={page} totalPages={totalPages} />
+
+      {pageItems.length > 0 && (
+        <JsonLdScript
+          data={itemListJsonLd(
+            pageItems.map((x) => ({
+              name: x.name,
+              url: `/resources/${x.id}`,
+              description: x.description ?? undefined,
+            })),
+          )}
+        />
+      )}
+      <CompareBar />
     </div>
   );
 }

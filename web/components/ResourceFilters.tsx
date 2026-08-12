@@ -9,9 +9,18 @@ interface Props {
   typeCounts?: Record<string, number>;
   tags?: string[];
   tagCounts?: Record<string, number>;
+  /** 隐藏类型快捷行（子版块落地页已通过 ResourceSubNav 切换类型，避免 ?type= 在子版块路由下失效） */
+  hideType?: boolean;
 }
 
-export default function ResourceFilters({ countries, languages, typeCounts, tags, tagCounts }: Props) {
+export default function ResourceFilters({
+  countries,
+  languages,
+  typeCounts,
+  tags,
+  tagCounts,
+  hideType,
+}: Props) {
   const router = useRouter();
   const pathname = usePathname();
   const sp = useSearchParams();
@@ -73,6 +82,7 @@ export default function ResourceFilters({ countries, languages, typeCounts, tags
   return (
     <div style={{ marginBottom: 20 }}>
       {/* 类型快捷标签栏（导航站核心范式：点击即筛选，当前高亮） */}
+      {!hideType && (
       <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap', marginBottom: 14 }}>
         <button
           type="button"
@@ -107,6 +117,7 @@ export default function ResourceFilters({ countries, languages, typeCounts, tags
           );
         })}
       </div>
+      )}
 
       {/* 标签分面（点击即筛选，含计数；与类型/国家/语言交叉组合） */}
       {tags && tags.length > 0 && (

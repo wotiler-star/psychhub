@@ -15,6 +15,7 @@ import { RESOURCE_TYPE_META } from '@/lib/format';
 import { breadcrumbJsonLd, JsonLdScript } from '@/lib/jsonld';
 import EmptyState from '@/components/EmptyState';
 import { paginate, withPagination } from '@/lib/paginate';
+import { sortResources } from '@/lib/resourceSort';
 
 export const dynamic = 'force-dynamic';
 
@@ -59,20 +60,7 @@ interface SP {
   [key: string]: string | undefined;
 }
 
-// 将资源 trafficLevel（混合「高/中」与「X万/月」）归一为可比较的热度分，用于排序
-function trafficScore(level: string | null): number {
-  if (!level) return 0;
-  const m = level.match(/(\d+)(?:-(\d+))?万\/月/);
-  if (m) {
-    const lo = Number(m[1]);
-    const hi = m[2] ? Number(m[2]) : lo;
-    return (lo + hi) / 2;
-  }
-  if (level.includes('高')) return 3000;
-  if (level.includes('中')) return 1000;
-  if (level.includes('低')) return 300;
-  return 0;
-}
+// 将资源 trafficLevel（混合「高/中」与「X万/月」）归一为可比较的热度分，用于排序（见 lib/resourceSort）
 
 export default async function ResourcesPage({
   searchParams,
@@ -101,16 +89,7 @@ export default async function ResourcesPage({
   );
 
   // 排序（导航站常见：精选优先 / 流量优先 / 名称 A-Z / 最新收录）
-  const resources =
-    sp.sort === 'traffic'
-      ? [...raw].sort((a, b) => trafficScore(b.trafficLevel) - trafficScore(a.trafficLevel))
-      : sp.sort === 'name'
-        ? [...raw].sort((a, b) => a.name.localeCompare(b.name))
-        : sp.sort === 'featured'
-          ? [...raw].sort((a, b) => Number(!!b.featured) - Number(!!a.featured))
-          : sp.sort === 'newest'
-            ? [...raw].sort((a, b) => (b.createdAt || '').localeCompare(a.createdAt || ''))
-            : raw;
+  const resources = sortResources(raw, sp.sort);
 
   const page = Number(sp.page) || 1;
   const { pageItems, totalPages } = paginate(resources, page, 12);
