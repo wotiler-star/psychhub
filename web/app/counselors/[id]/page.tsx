@@ -4,6 +4,7 @@ import Link from 'next/link';
 import { getCounselor, getCounselors, getCounselorReviews, getAssessments, getHelplines } from '@/lib/api';
 import type { Counselor, Review, Assessment, Helpline } from '@/lib/types';
 import ReviewForm from '@/components/ReviewForm';
+import ReferralButton from '@/components/ReferralButton';
 import BookmarkButton from '@/components/BookmarkButton';
 import Breadcrumb from '@/components/Breadcrumb';
 import { ogImageUrl } from '@/lib/og';
@@ -133,15 +134,7 @@ export default async function CounselorDetail({
           {c.org && <div style={{ color: 'var(--muted)', fontSize: 14, marginTop: 2 }}>{c.org}</div>}
         </div>
         {c.bookingUrl && (
-          <a
-            className="btn-primary"
-            href={c.bookingUrl}
-            target="_blank"
-            rel="noopener noreferrer"
-            style={{ minHeight: 44, display: 'inline-flex', alignItems: 'center' }}
-          >
-            前往预约 ↗
-          </a>
+          <ReferralButton counselorId={c.id} counselorName={c.name} bookingUrl={c.bookingUrl} />
         )}
         <BookmarkButton
           type="counselor"

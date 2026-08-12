@@ -14,6 +14,7 @@ import ResourceSubNav from '@/components/ResourceSubNav';
 import { RESOURCE_TYPE_META } from '@/lib/format';
 import { breadcrumbJsonLd, JsonLdScript } from '@/lib/jsonld';
 import EmptyState from '@/components/EmptyState';
+import RecentlyViewed from '@/components/RecentlyViewed';
 import { paginate, withPagination } from '@/lib/paginate';
 import { sortResources } from '@/lib/resourceSort';
 
@@ -137,6 +138,8 @@ export default async function ResourcesPage({
         <ResourceFilters countries={countries} languages={languages} typeCounts={typeCounts} tags={tags} tagCounts={tagCounts} />
       </FilterPanel>
 
+      <RecentlyViewed />
+
       <div
         style={{
           display: 'flex',
@@ -155,10 +158,31 @@ export default async function ResourcesPage({
       </div>
 
       {pageItems.length === 0 ? (
-        <EmptyState
-          title="没有匹配的资源"
-          hint="试试清除筛选条件，或使用顶部搜索框。"
-        />
+        <>
+          <EmptyState
+            title="没有匹配的资源"
+            hint="试试清除筛选条件，或使用顶部搜索框。"
+          />
+          <div style={{ marginTop: 16, display: 'flex', gap: 10, justifyContent: 'center', flexWrap: 'wrap', alignItems: 'center' }}>
+            <Link href="/resources" className="btn-primary" style={{ fontSize: 14 }}>
+              清除筛选
+            </Link>
+            {tags.length > 0 && (
+              <span style={{ fontSize: 13, color: 'var(--muted)' }}>
+                热门：
+                {tags.slice(0, 8).map((t) => (
+                  <Link
+                    key={t}
+                    href={`/tags/${encodeURIComponent(t)}`}
+                    style={{ color: 'var(--brand)', marginLeft: 8, textDecoration: 'none' }}
+                  >
+                    #{t}
+                  </Link>
+                ))}
+              </span>
+            )}
+          </div>
+        </>
       ) : sp.view === 'list' ? (
         <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
           {pageItems.map((r) => {

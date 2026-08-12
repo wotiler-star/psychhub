@@ -39,3 +39,13 @@ web/_*.html
 
 # 本地 AI 工程记忆（非项目源码）
 .workbuddy/
+
+# 部署脚本含腾讯云密钥，禁止提交
+_tat_redeploy_pinned.py
+_tat_redeploy.py
+_tat_deploy.py
+_tat_deploy2.py
+_tat_deploy3.py
+_tat_diag.py
+_tat_diag2.py
+_tat_diag3.py

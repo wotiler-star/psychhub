@@ -15,6 +15,7 @@ import BookmarkButton from '@/components/BookmarkButton';
 import CompareToggle from '@/components/CompareToggle';
 import Pager from '@/components/Pager';
 import EmptyState from '@/components/EmptyState';
+import ResourceViewTracker from '@/components/ResourceViewTracker';
 import {
   breadcrumbJsonLd,
   itemListJsonLd,
@@ -340,6 +341,8 @@ async function Detail({ slug }: { slug: string }) {
           { name: r.name, url: `/resources/${r.id}` },
         ]}
       />
+
+      <ResourceViewTracker id={r.id} name={r.name} url={r.url} subtitle={r.description ?? undefined} />
 
       <div
         style={{

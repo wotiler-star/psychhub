@@ -3,6 +3,7 @@ import { notFound } from 'next/navigation';
 import Link from 'next/link';
 import { getAssessment, getAssessments, getCounselors, getHelplines } from '@/lib/api';
 import AssessmentGate from '@/components/AssessmentGate';
+import AssessmentTrends from '@/components/AssessmentTrends';
 import type { Assessment, AssessmentQuestion, AssessmentBand, Counselor, Helpline } from '@/lib/types';
 import { ogImageUrl } from '@/lib/og';
 import Breadcrumb from '@/components/Breadcrumb';
@@ -142,6 +143,8 @@ export default async function AssessmentDetail({
         questions={questions}
         bands={bands}
       />
+
+      <AssessmentTrends slug={assessment.slug} />
 
       {/* FAQ 结构化（GEO R10.4 / SEO R9.5） */}
       <section className="card" style={{ marginTop: 32 }}>

@@ -1,6 +1,6 @@
 import type { Metadata } from 'next';
 import Link from 'next/link';
-import { getArticle, getArticles } from '@/lib/api';
+import { getArticle, getArticles, getAssessments } from '@/lib/api';
 import { ogImageUrl } from '@/lib/og';
 import ShareBar from '@/components/ShareBar';
 import ArticleFeedback from '@/components/ArticleFeedback';
@@ -149,6 +149,41 @@ export default async function ArticleDetailPage({
     .sort((x, y) => y.score - x.score)
     .slice(0, 3)
     .map((x) => x.a);
+
+  // 内容 → 测评跨链（C→A）：文章标签 / 类目映射到测评类型，推荐相关自评量表
+  const ARTICLE_TAG_TO_TYPE: Record<string, string[]> = {
+    抑郁: ['DEPRESSION'],
+    焦虑: ['ANXIETY'],
+    情绪: ['DEPRESSION', 'ANXIETY', 'STRESS'],
+    压力: ['STRESS'],
+    睡眠: ['SLEEP'],
+    自尊: ['SELF_ESTEEM'],
+    自信: ['SELF_ESTEEM'],
+    幸福感: ['WELLBEING'],
+    正念: ['WELLBEING'],
+    个人成长: ['WELLBEING'],
+    人格: ['PERSONALITY'],
+    性格: ['PERSONALITY'],
+  };
+  const CATEGORY_TO_TYPE: Record<string, string[]> = {
+    POPSCI: ['WELLBEING', 'SELF_ESTEEM'],
+    RESEARCH: ['STRESS', 'DEPRESSION'],
+    NEWS: ['STRESS', 'ANXIETY'],
+  };
+  const targetTypes = Array.from(
+    new Set([
+      ...article.tags.flatMap((t) => ARTICLE_TAG_TO_TYPE[t] ?? []),
+      ...(CATEGORY_TO_TYPE[article.category ?? ''] ?? []),
+    ]),
+  );
+  const allAssessments = await getAssessments().catch(() => []);
+  const relatedAssessments = targetTypes.length
+    ? allAssessments
+        .map((a) => ({ a, score: a.type && targetTypes.includes(a.type) ? 2 : 0 }))
+        .sort((x, y) => y.score - x.score)
+        .slice(0, 3)
+        .map((r) => r.a)
+    : [];
 
   const jsonLd = {
     '@context': 'https://schema.org',
@@ -354,6 +389,41 @@ export default async function ArticleDetailPage({
                 style={{ color: 'var(--brand)', marginLeft: 8, textDecoration: 'none' }}
               >
                 #{t}
+              </Link>
+            ))}
+          </div>
+        </div>
+      )}
+
+      {relatedAssessments.length > 0 && (
+        <div style={{ marginTop: 36, borderTop: '1px solid var(--line)', paddingTop: 24 }}>
+          <h2 style={{ fontSize: 20, margin: '0 0 6px' }}>相关心理测评</h2>
+          <p style={{ color: 'var(--muted)', fontSize: 14, margin: '0 0 16px', lineHeight: 1.7 }}>
+            想进一步了解自己的状态？可完成以下自评量表，结果仅供参考、不构成诊断。
+          </p>
+          <div
+            style={{
+              display: 'grid',
+              gridTemplateColumns: 'repeat(auto-fill, minmax(220px, 1fr))',
+              gap: 12,
+            }}
+          >
+            {relatedAssessments.map((a) => (
+              <Link
+                key={a.slug}
+                href={`/assessments/${a.slug}`}
+                className="card"
+                style={{ color: 'var(--ink)', textDecoration: 'none', padding: 16, display: 'flex', flexDirection: 'column', gap: 8 }}
+              >
+                <div style={{ fontSize: 12, color: 'var(--brand)', fontWeight: 700 }}>
+                  {a.type ?? '测评'}
+                </div>
+                <h3 style={{ margin: 0, fontSize: 15, lineHeight: 1.4 }}>{a.title}</h3>
+                {a.description && (
+                  <p style={{ fontSize: 13, color: 'var(--muted)', margin: 0, lineHeight: 1.6 }}>
+                    {a.description}
+                  </p>
+                )}
               </Link>
             ))}
           </div>
