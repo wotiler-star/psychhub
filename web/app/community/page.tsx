@@ -30,6 +30,10 @@ export default async function CommunityPage() {
     reviews = [];
   }
 
+  const total = reviews.length;
+  const avgRating = total ? reviews.reduce((s, r) => s + r.rating, 0) / total : 0;
+  const counselorCount = new Set(reviews.map((r) => r.counselorId)).size;
+
   const jsonLd = {
     '@context': 'https://schema.org',
     '@type': 'CollectionPage',
@@ -56,6 +60,24 @@ export default async function CommunityPage() {
           需要帮助？
         </Link>
       </div>
+
+      {/* 统计概览 */}
+      {reviews.length > 0 && (
+        <div style={{ display: 'flex', gap: 12, flexWrap: 'wrap', marginBottom: 24 }}>
+          <div className="card" style={{ flex: '1 1 160px', padding: '14px 18px' }}>
+            <div style={{ fontSize: 24, fontWeight: 800 }}>{total}</div>
+            <div style={{ fontSize: 13, color: 'var(--muted)' }}>条真实评价</div>
+          </div>
+          <div className="card" style={{ flex: '1 1 160px', padding: '14px 18px' }}>
+            <div style={{ fontSize: 24, fontWeight: 800, color: 'var(--warn)' }}>★ {avgRating.toFixed(1)}</div>
+            <div style={{ fontSize: 13, color: 'var(--muted)' }}>平均评分</div>
+          </div>
+          <div className="card" style={{ flex: '1 1 160px', padding: '14px 18px' }}>
+            <div style={{ fontSize: 24, fontWeight: 800 }}>{counselorCount}</div>
+            <div style={{ fontSize: 13, color: 'var(--muted)' }}>位咨询师被评价</div>
+          </div>
+        </div>
+      )}
 
       {reviews.length === 0 ? (
         <div className="card" style={{ textAlign: 'center', color: 'var(--muted)' }}>

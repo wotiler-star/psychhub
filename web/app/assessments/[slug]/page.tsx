@@ -2,7 +2,8 @@ import type { Metadata } from 'next';
 import { notFound } from 'next/navigation';
 import Link from 'next/link';
 import { getAssessment, getAssessments, getCounselors, getHelplines } from '@/lib/api';
-import AssessmentQuiz from '@/components/AssessmentQuiz';
+import AssessmentGate from '@/components/AssessmentGate';
+import AssessmentTrends from '@/components/AssessmentTrends';
 import type { Assessment, AssessmentQuestion, AssessmentBand, Counselor, Helpline } from '@/lib/types';
 import { ogImageUrl } from '@/lib/og';
 import Breadcrumb from '@/components/Breadcrumb';
@@ -18,9 +19,9 @@ export async function generateMetadata({
   const { slug } = await params;
   try {
     const a = await getAssessment(slug);
-    const ogImage = ogImageUrl({ title: a.title, subtitle: a.description, tag: '免费测评' });
+    const ogImage = ogImageUrl({ title: a.title, subtitle: a.description, tag: '在线测评' });
     return {
-      title: `${a.title} | 免费在线测评`,
+      title: `${a.title} | 在线测评`,
       description: a.description ?? undefined,
       alternates: { canonical: `/assessments/${slug}` },
       openGraph: {
@@ -106,7 +107,7 @@ export default async function AssessmentDetail({
       {
         '@type': 'Question',
         name: '测评需要付费吗？',
-        acceptedAnswer: { '@type': 'Answer', text: '本平台所有测评免费、匿名，不需要注册或付费。' },
+        acceptedAnswer: { '@type': 'Answer', text: '基础测评全部免费、匿名，无需注册或付费；部分深度测评需高级及以上会员解锁，开通后可无限次使用。' },
       },
     ],
   };
@@ -135,12 +136,15 @@ export default async function AssessmentDetail({
         <p style={{ fontSize: 13, color: 'var(--muted)', margin: '0 0 24px' }}>量表来源：{assessment.source}</p>
       )}
 
-      <AssessmentQuiz
+      <AssessmentGate
+        slug={assessment.slug}
+        title={assessment.title}
+        type={assessment.type}
         questions={questions}
         bands={bands}
-        assessmentSlug={assessment.slug}
-        assessmentTitle={assessment.title}
       />
+
+      <AssessmentTrends slug={assessment.slug} />
 
       {/* FAQ 结构化（GEO R10.4 / SEO R9.5） */}
       <section className="card" style={{ marginTop: 32 }}>
@@ -155,7 +159,7 @@ export default async function AssessmentDetail({
           <div>
             <strong style={{ fontSize: 15 }}>需要付费或注册吗？</strong>
             <p style={{ color: 'var(--muted)', fontSize: 14, margin: '4px 0 0', lineHeight: 1.7 }}>
-              全部免费、匿名，无需注册或付费。
+              基础测评全部免费、匿名，无需注册或付费；部分「会员专属深度测评」需高级及以上会员解锁。
             </p>
           </div>
         </div>

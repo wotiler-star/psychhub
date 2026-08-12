@@ -241,6 +241,14 @@ export default function AssessmentQuiz({
             重新测试
           </button>
         )}
+        {submitted && (
+          <button
+            onClick={() => window.print()}
+            style={{ height: 44, padding: '0 18px', borderRadius: 10, border: '1px solid var(--line)', background: 'var(--card)', color: 'var(--ink)', cursor: 'pointer', fontFamily: 'inherit' }}
+          >
+            打印 / 保存报告
+          </button>
+        )}
         {saved && (
           <span style={{ color: 'var(--alert-success-ink)', fontSize: 14, fontWeight: 600 }}>
             ✓ 已保存到「我的测评」
@@ -249,7 +257,7 @@ export default function AssessmentQuiz({
       </div>
 
       {submitted && band && (
-        <div ref={resultRef} className="card" style={{ marginTop: 24, borderColor: 'var(--brand)', background: 'var(--surface-3)' }}>
+        <div ref={resultRef} id="assessment-report" className="card" style={{ marginTop: 24, borderColor: 'var(--brand)', background: 'var(--surface-3)' }}>
           <div style={{ display: 'flex', alignItems: 'baseline', gap: 12, flexWrap: 'wrap' }}>
             <span style={{ fontSize: 14, color: 'var(--muted)' }}>总分</span>
             <span style={{ fontSize: 32, fontWeight: 800, color: 'var(--brand)' }}>{total}</span>

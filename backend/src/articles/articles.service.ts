@@ -1,5 +1,6 @@
 import { Injectable } from '@nestjs/common';
 import { PrismaService } from '../prisma/prisma.service';
+import { asArray } from '../common/db-array.util';
 
 @Injectable()
 export class ArticlesService {
@@ -19,7 +20,7 @@ export class ArticlesService {
         (a.title || '').toLowerCase().includes(kw) ||
         (a.excerpt || '').toLowerCase().includes(kw) ||
         (a.content || '').toLowerCase().includes(kw) ||
-        (a.tags || []).some((t: string) => t.toLowerCase().includes(kw)),
+        asArray(a.tags).some((t) => t.toLowerCase().includes(kw)),
     );
   }
 

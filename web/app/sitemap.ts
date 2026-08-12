@@ -1,5 +1,6 @@
 import type { MetadataRoute } from 'next';
 import { getArticles, getCounselors, getAssessments, getResources } from '@/lib/api';
+import { RESOURCE_TYPES } from '@/lib/format';
 
 export const dynamic = 'force-dynamic';
 
@@ -25,6 +26,14 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
     lastModified: now,
     changeFrequency: r === '' ? 'daily' : 'weekly',
     priority: r === '' ? 1 : 0.7,
+  }));
+
+  // 资源导航 7 个子版块落地页（独立可收录 URL）
+  const subBoardRoutes: MetadataRoute.Sitemap = RESOURCE_TYPES.map((t) => ({
+    url: `${SITE_URL}/resources/${t.toLowerCase()}`,
+    lastModified: now,
+    changeFrequency: 'weekly' as const,
+    priority: 0.6,
   }));
 
   try {
@@ -65,7 +74,7 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
       })),
       ...tagRoutes,
     ];
-    return [...base, ...detailRoutes];
+    return [...base, ...subBoardRoutes, ...detailRoutes];
   } catch {
     return base;
   }

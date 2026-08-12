@@ -14,6 +14,7 @@ export const dynamic = 'force-dynamic';
 interface SP {
   category?: string;
   tag?: string;
+  archive?: string;
   sort?: string;
   view?: string;
   q?: string;
@@ -57,7 +58,7 @@ export default async function ArticlesPage({
 }: {
   searchParams: Promise<SP>;
 }) {
-  const { category, tag, sort, view, q, page: pageStr } = await searchParams;
+  const { category, tag, archive, sort, view, q, page: pageStr } = await searchParams;
   const all = await getArticles({ category, q }).catch(() => []);
 
   const categoryCounts: Record<string, number> = {};
@@ -65,7 +66,22 @@ export default async function ArticlesPage({
     if (a.category) categoryCounts[a.category] = (categoryCounts[a.category] ?? 0) + 1;
   }
 
-  let articles = tag ? all.filter((a) => a.tags.includes(tag)) : all;
+  // 标签分面计数（排除当前选中 tag）+ 月份归档计数
+  const tagCounts: Record<string, number> = {};
+  const archiveMap: Record<string, number> = {};
+  for (const a of all) {
+    for (const t of a.tags) if (t !== tag) tagCounts[t] = (tagCounts[t] ?? 0) + 1;
+    const ym = (a.publishedAt || '').slice(0, 7);
+    if (ym) archiveMap[ym] = (archiveMap[ym] ?? 0) + 1;
+  }
+  const tags = Object.keys(tagCounts).sort((a, b) => tagCounts[b] - tagCounts[a]);
+  const archives = Object.entries(archiveMap).sort((a, b) => b[0].localeCompare(a[0]));
+
+  let articles = all.filter((a) => {
+    if (tag && !a.tags.includes(tag)) return false;
+    if (archive && (a.publishedAt || '').slice(0, 7) !== archive) return false;
+    return true;
+  });
 
   articles = [...articles].sort((a, b) =>
     sort === 'oldest'
@@ -80,6 +96,7 @@ export default async function ArticlesPage({
     const params = new URLSearchParams();
     if (category) params.set('category', category);
     if (tag) params.set('tag', tag);
+    if (archive) params.set('archive', archive);
     if (q) params.set('q', q);
     if (view) params.set('view', view);
     for (const [k, v] of Object.entries(overrides)) {
@@ -164,16 +181,68 @@ export default async function ArticlesPage({
         </div>
       </div>
 
-      {tag && (
-        <div style={{ display: 'flex', gap: 8, alignItems: 'center', marginBottom: 20, fontSize: 14 }}>
-          <span style={{ color: 'var(--muted)' }}>标签筛选：</span>
+      {/* 月份归档分面（点击按月份筛选，含计数） */}
+      {archives.length > 0 && (
+        <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap', marginBottom: 16, alignItems: 'center' }}>
+          <span style={{ fontSize: 13, color: 'var(--muted)' }}>归档：</span>
           <Link
-            href={category ? `/articles?category=${category}` : '/articles'}
+            href={href({ archive: undefined })}
             className="chip"
-            style={{ background: 'var(--brand)', color: 'var(--btn-text)', textDecoration: 'none' }}
+            style={{ textDecoration: 'none', background: !archive ? 'var(--brand)' : 'var(--surface-2)', color: !archive ? 'var(--btn-text)' : 'var(--muted)' }}
           >
-            {tag} ✕
+            全部时间
           </Link>
+          {archives.map(([ym, n]) => {
+            const active = archive === ym;
+            return (
+              <Link
+                key={ym}
+                href={href({ archive: active ? undefined : ym })}
+                className="chip"
+                style={{ textDecoration: 'none', background: active ? 'var(--brand)' : 'var(--surface-2)', color: active ? 'var(--btn-text)' : 'var(--muted)' }}
+              >
+                {ym} <span style={{ opacity: 0.7, marginLeft: 4, fontSize: 12 }}>({n})</span>
+              </Link>
+            );
+          })}
+        </div>
+      )}
+
+      {/* 标签分面（点击即筛选，含计数） */}
+      {tags.length > 0 && (
+        <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap', marginBottom: 16, alignItems: 'center' }}>
+          <span style={{ fontSize: 13, color: 'var(--muted)' }}>标签：</span>
+          {tags.map((t) => {
+            const active = tag === t;
+            return (
+              <Link
+                key={t}
+                href={href({ tag: active ? undefined : t })}
+                className="chip"
+                style={{ textDecoration: 'none', background: active ? 'var(--brand)' : 'var(--surface-2)', color: active ? 'var(--btn-text)' : 'var(--muted)' }}
+              >
+                {t}
+                {tagCounts[t] != null && <span style={{ opacity: 0.7, marginLeft: 4, fontSize: 12 }}>({tagCounts[t]})</span>}
+              </Link>
+            );
+          })}
+        </div>
+      )}
+
+      {/* 当前已选筛选（可单独移除） */}
+      {(tag || archive) && (
+        <div style={{ display: 'flex', gap: 8, alignItems: 'center', marginBottom: 20, fontSize: 14, flexWrap: 'wrap' }}>
+          <span style={{ color: 'var(--muted)' }}>已筛选：</span>
+          {tag && (
+            <Link href={href({ tag: undefined })} className="chip" style={{ background: 'var(--brand)', color: 'var(--btn-text)', textDecoration: 'none' }}>
+              {tag} ✕
+            </Link>
+          )}
+          {archive && (
+            <Link href={href({ archive: undefined })} className="chip" style={{ background: 'var(--brand)', color: 'var(--btn-text)', textDecoration: 'none' }}>
+              {archive} ✕
+            </Link>
+          )}
         </div>
       )}
 
@@ -242,7 +311,7 @@ export default async function ArticlesPage({
         </div>
       )}
 
-      <Pager basePath="/articles" params={{ category, tag, sort, view, q }} page={page} totalPages={totalPages} />
+      <Pager basePath="/articles" params={{ category, tag, archive, sort, view, q }} page={page} totalPages={totalPages} />
     </div>
   );
 }

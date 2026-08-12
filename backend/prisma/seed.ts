@@ -4,11 +4,20 @@ import { resources, helplines, assessments, articles, counselors, reviews } from
 
 const prisma = createPrismaClient();
 
+/**
+ * SQLite 兼容层放宽输入类型。
+ * schema.prisma 里 tags/specialties/approach/languages/questions/interpretation 声明为 String
+ * （SQLite 连接器不支持标量数组与 Json），而种子数据里它们是数组 / 对象——
+ * 运行时由 prisma-extensions 的 $allOperations 扩展在写入前自动序列化，行为正确；
+ * 但 Prisma 生成的静态类型仍按 String 校验，故此处显式放宽，避免 nest build 编译失败。
+ */
+const dbInput = <T>(v: T): any => v;
+
 async function main() {
   console.log('开始写入种子数据...');
   for (const r of resources) {
     const { featured, ...rest } = r;
-    const data = { ...rest, type: rest.type, featured: !!featured };
+    const data = dbInput({ ...rest, type: rest.type, featured: !!featured });
     await prisma.resource.upsert({
       where: { name: r.name },
       update: data,
@@ -16,30 +25,42 @@ async function main() {
     });
   }
   for (const h of helplines) {
-    await prisma.helpline.upsert({ where: { name: h.name }, update: h, create: h });
+    await prisma.helpline.upsert({
+      where: { name: h.name },
+      update: dbInput(h),
+      create: dbInput(h),
+    });
   }
   for (const a of assessments) {
-    await prisma.assessment.upsert({ where: { slug: a.slug }, update: a, create: a });
+    await prisma.assessment.upsert({
+      where: { slug: a.slug },
+      update: dbInput(a),
+      create: dbInput(a),
+    });
   }
   for (const art of articles) {
     const { publishedAt, ...rest } = art;
     const pub = new Date(publishedAt);
     await prisma.article.upsert({
       where: { slug: art.slug },
-      update: { ...rest, publishedAt: pub },
-      create: { ...rest, publishedAt: pub },
+      update: dbInput({ ...rest, publishedAt: pub }),
+      create: dbInput({ ...rest, publishedAt: pub }),
     });
   }
   for (const c of counselors) {
-    await prisma.counselor.upsert({ where: { name: c.name }, update: c, create: c });
+    await prisma.counselor.upsert({
+      where: { name: c.name },
+      update: dbInput(c),
+      create: dbInput(c),
+    });
   }
   for (const rv of reviews) {
     const { createdAt, ...rest } = rv;
     const cDate = new Date(createdAt);
     await prisma.review.upsert({
       where: { id: rv.id },
-      update: { ...rest, createdAt: cDate },
-      create: { ...rest, createdAt: cDate },
+      update: dbInput({ ...rest, createdAt: cDate }),
+      create: dbInput({ ...rest, createdAt: cDate }),
     });
   }
 

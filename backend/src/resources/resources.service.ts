@@ -1,6 +1,7 @@
 import { Injectable } from '@nestjs/common';
 import { PrismaService } from '../prisma/prisma.service';
 import { QueryResourceDto } from './dto/query-resource.dto';
+import { asArray } from '../common/db-array.util';
 
 @Injectable()
 export class ResourcesService {
@@ -20,9 +21,9 @@ export class ResourcesService {
     const tag = query.tag;
     const q = query.q ? query.q.toLowerCase() : null;
     return rows.filter((r) => {
-      if (tag && !((r.tags as string[]) || []).includes(tag)) return false;
+      if (tag && !asArray(r.tags).includes(tag)) return false;
       if (q) {
-        const hay = [r.name, r.description, ...((r.tags as string[]) || [])]
+        const hay = [r.name, r.description, ...asArray(r.tags)]
           .filter(Boolean)
           .join(' ')
           .toLowerCase();

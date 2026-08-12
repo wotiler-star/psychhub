@@ -1,0 +1,14 @@
+{
+  "extends": "./tsconfig.json",
+  "compilerOptions": {
+    // 固定 rootDir，产物落到 dist/main.js（与 package.json 的 start:prod、
+    // Dockerfile CMD 中的 `node dist/main.js` 保持一致）。
+    // 曾踩坑：根 tsconfig 的 include 含 prisma/**，TS 会把 rootDir 上提到项目根，
+    // 产物变成 dist/src/main.js，导致生产启动报 Cannot find module。
+    "rootDir": "./src"
+  },
+  // 构建产物只含运行时需要的 src；prisma/（seed、扩展）由 ts-node 直接执行，
+  // 测试与本地脚本不进生产包。类型检查仍由根 tsconfig 全量覆盖（npm run typecheck）。
+  "include": ["src/**/*"],
+  "exclude": ["node_modules", "dist", "test", "prisma", "scripts", "**/*.spec.ts"]
+}

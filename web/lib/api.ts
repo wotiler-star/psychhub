@@ -2,11 +2,18 @@ import type { Resource, Helpline, Assessment, Article, Counselor, Review, AuthUs
 
 // API 基地址解析：
 // - 浏览器端：使用相对路径 /api，由 next.config 的 rewrites 代理到后端（规避 CORS）
-// - 服务端（SSR）：必须绝对地址，默认 http://localhost:3001，可用 NEXT_PUBLIC_API_BASE 覆盖
+// - 服务端（SSR）：必须绝对地址。
+//   ⚠️ NEXT_PUBLIC_* 是「构建期内联」变量，打包后无法用运行时环境变量覆盖；
+//   因此优先读取运行时变量 API_BASE（无 NEXT_PUBLIC_ 前缀，Next 不会内联），
+//   使同一份产物可在不同服务器/端口上运行（生产默认 127.0.0.1:3501）。
 const isServer = typeof window === 'undefined';
 function apiBase(): string {
   if (!isServer) return '';
-  return process.env.NEXT_PUBLIC_API_BASE || 'http://localhost:3001';
+  return (
+    process.env.API_BASE ||
+    process.env.NEXT_PUBLIC_API_BASE ||
+    'http://127.0.0.1:3501'
+  );
 }
 
 async function getJson<T>(path: string): Promise<T> {
@@ -196,6 +203,54 @@ export async function register(input: {
 
 export async function logout(): Promise<void> {
   await fetch(`${apiBase()}/api/auth/logout`, { method: 'POST', cache: 'no-store' });
+}
+
+// === 会员态（后端落库；当前生产为 mock API 时静默回退本地）===
+export interface MembershipRemote {
+  tier: string;
+  expiresAt: string | null;
+  subscriptions: {
+    id: string;
+    tier: string;
+    billing: string;
+    status: string;
+    provider: string | null;
+    paymentRef: string | null;
+    amount: number | null;
+    expiresAt: string | null;
+    createdAt: string;
+  }[];
+}
+
+/** 拉取当前登录用户的服务端会员态（未登录 / 后端未上线 → 返回 null） */
+export async function getMembership(): Promise<MembershipRemote | null> {
+  try {
+    const d = await getJson<MembershipRemote>('/api/membership/me');
+    return d ?? null;
+  } catch {
+    return null;
+  }
+}
+
+/** 开通 / 升级订阅：把支付结果（含回执）写给真实后端；失败（mock API 404 等）返回 null */
+export async function subscribeMembership(input: {
+  tier: string;
+  billing: string;
+  provider?: string;
+  paymentRef?: string;
+}): Promise<MembershipRemote | null> {
+  try {
+    const res = await fetch(`${apiBase()}/api/membership/subscribe`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(input),
+      cache: 'no-store',
+    });
+    if (!res.ok) return null;
+    return (await res.json()) as MembershipRemote;
+  } catch {
+    return null;
+  }
 }
 
 // === 站点收录提交（UGC）===

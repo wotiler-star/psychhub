@@ -1,6 +1,7 @@
 import type { Metadata } from 'next';
 import Link from 'next/link';
 import { getAssessments } from '@/lib/api';
+import { isVipAssessment } from '@/lib/vipAssessments';
 import Pager from '@/components/Pager';
 import SearchBox from '@/components/SearchBox';
 import EmptyState from '@/components/EmptyState';
@@ -109,7 +110,7 @@ export default async function AssessmentsPage({ searchParams }: { searchParams: 
       />
       <h1 style={{ fontSize: 28, margin: '0 0 6px' }}>心理测评</h1>
       <p style={{ color: 'var(--muted)', fontSize: 16, margin: '0 0 20px', maxWidth: 680 }}>
-        以下测评使用公共领域 / 授权公开的权威量表，全部免费、匿名、即时出分。
+        以下测评使用公共领域 / 授权公开的权威量表，基础测评免费、匿名、即时出分；部分「深度测评」为会员专属。
         <strong>结果仅供参考，不构成任何医疗诊断或治疗建议。</strong>
       </p>
 
@@ -179,7 +180,11 @@ export default async function AssessmentsPage({ searchParams }: { searchParams: 
               </div>
               <h3 style={{ margin: '8px 0 6px', fontSize: 18 }}>{a.title}</h3>
               <p style={{ color: 'var(--muted)', fontSize: 14, margin: '0 0 12px', lineHeight: 1.7 }}>{a.description}</p>
-              <span className="chip chip-green">免费 · 匿名</span>
+              {isVipAssessment(a) ? (
+                <span className="chip chip-purple">会员专享 · 深度</span>
+              ) : (
+                <span className="chip chip-green">免费 · 匿名</span>
+              )}
             </Link>
           ))}
         </div>

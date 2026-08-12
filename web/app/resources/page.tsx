@@ -2,6 +2,7 @@ import type { Metadata } from 'next';
 import Link from 'next/link';
 import { getResources } from '@/lib/api';
 import ResourceCard from '@/components/ResourceCard';
+import type { Resource } from '@/lib/types';
 import ResourceFilters from '@/components/ResourceFilters';
 import Pager from '@/components/Pager';
 import CompareBar from '@/components/CompareBar';
@@ -9,10 +10,13 @@ import ViewToggle from '@/components/ViewToggle';
 import BookmarkButton from '@/components/BookmarkButton';
 import CompareToggle from '@/components/CompareToggle';
 import FilterPanel from '@/components/FilterPanel';
+import ResourceSubNav from '@/components/ResourceSubNav';
 import { RESOURCE_TYPE_META } from '@/lib/format';
 import { breadcrumbJsonLd, JsonLdScript } from '@/lib/jsonld';
 import EmptyState from '@/components/EmptyState';
+import RecentlyViewed from '@/components/RecentlyViewed';
 import { paginate, withPagination } from '@/lib/paginate';
+import { sortResources } from '@/lib/resourceSort';
 
 export const dynamic = 'force-dynamic';
 
@@ -57,20 +61,7 @@ interface SP {
   [key: string]: string | undefined;
 }
 
-// 将资源 trafficLevel（混合「高/中」与「X万/月」）归一为可比较的热度分，用于排序
-function trafficScore(level: string | null): number {
-  if (!level) return 0;
-  const m = level.match(/(\d+)(?:-(\d+))?万\/月/);
-  if (m) {
-    const lo = Number(m[1]);
-    const hi = m[2] ? Number(m[2]) : lo;
-    return (lo + hi) / 2;
-  }
-  if (level.includes('高')) return 3000;
-  if (level.includes('中')) return 1000;
-  if (level.includes('低')) return 300;
-  return 0;
-}
+// 将资源 trafficLevel（混合「高/中」与「X万/月」）归一为可比较的热度分，用于排序（见 lib/resourceSort）
 
 export default async function ResourcesPage({
   searchParams,
@@ -78,26 +69,28 @@ export default async function ResourcesPage({
   searchParams: Promise<SP>;
 }) {
   const sp = await searchParams;
-  const query = {
-    q: sp.q,
-    type: sp.type,
-    country: sp.country,
-    language: sp.language,
-    tag: sp.tag,
-  };
-  const raw = await getResources(query).catch(() => []);
+  const { q, type, country, language, tag } = sp;
+  const all = await getResources().catch(() => [] as Resource[]);
+
+  // 客户端分面过滤（数据量小，导航站常见做法：全量拉取后本地筛选/计数）
+  const ql = (q || '').toLowerCase();
+  const matchesText = (r: Resource) =>
+    !ql ||
+    r.name.toLowerCase().includes(ql) ||
+    (r.description || '').toLowerCase().includes(ql) ||
+    r.tags.some((t) => t.toLowerCase().includes(ql));
+
+  const raw = all.filter(
+    (r) =>
+      matchesText(r) &&
+      (!type || r.type === type) &&
+      (!country || r.country === country) &&
+      (!language || r.language === language) &&
+      (!tag || r.tags.includes(tag)),
+  );
 
   // 排序（导航站常见：精选优先 / 流量优先 / 名称 A-Z / 最新收录）
-  const resources =
-    sp.sort === 'traffic'
-      ? [...raw].sort((a, b) => trafficScore(b.trafficLevel) - trafficScore(a.trafficLevel))
-      : sp.sort === 'name'
-        ? [...raw].sort((a, b) => a.name.localeCompare(b.name))
-        : sp.sort === 'featured'
-          ? [...raw].sort((a, b) => Number(!!b.featured) - Number(!!a.featured))
-          : sp.sort === 'newest'
-            ? [...raw].sort((a, b) => (b.createdAt || '').localeCompare(a.createdAt || ''))
-            : raw;
+  const resources = sortResources(raw, sp.sort);
 
   const page = Number(sp.page) || 1;
   const { pageItems, totalPages } = paginate(resources, page, 12);
@@ -114,6 +107,17 @@ export default async function ResourcesPage({
   const typeCounts: Record<string, number> = {};
   for (const r of raw) typeCounts[r.type] = (typeCounts[r.type] ?? 0) + 1;
 
+  // 标签分面计数（排除 tag 维度，便于交叉筛选时其余标签仍有意义）
+  const tagCounts: Record<string, number> = {};
+  for (const r of all) {
+    if (!matchesText(r)) continue;
+    if (type && r.type !== type) continue;
+    if (country && r.country !== country) continue;
+    if (language && r.language !== language) continue;
+    for (const t of r.tags) tagCounts[t] = (tagCounts[t] ?? 0) + 1;
+  }
+  const tags = Object.keys(tagCounts).sort((a, b) => tagCounts[b] - tagCounts[a]);
+
   return (
     <div className="container-page" style={{ padding: '32px 20px 48px' }}>
       <JsonLdScript
@@ -123,14 +127,18 @@ export default async function ResourcesPage({
         ])}
       />
       <h1 style={{ fontSize: 28, margin: '0 0 6px' }}>心理资源导航</h1>
-      <p style={{ color: 'var(--muted)', fontSize: 16, margin: '0 0 24px', maxWidth: 680 }}>
+      <p style={{ color: 'var(--muted)', fontSize: 16, margin: '0 0 16px', maxWidth: 680 }}>
         聚合全球优质心理学网站，按类型、国家与语言筛选。点击任意卡片直达原站。
         （数据源自《全球心理学网站 TOP50 调研报告》）
       </p>
 
+      <ResourceSubNav />
+
       <FilterPanel>
-        <ResourceFilters countries={countries} languages={languages} typeCounts={typeCounts} />
+        <ResourceFilters countries={countries} languages={languages} typeCounts={typeCounts} tags={tags} tagCounts={tagCounts} />
       </FilterPanel>
+
+      <RecentlyViewed />
 
       <div
         style={{
@@ -150,10 +158,31 @@ export default async function ResourcesPage({
       </div>
 
       {pageItems.length === 0 ? (
-        <EmptyState
-          title="没有匹配的资源"
-          hint="试试清除筛选条件，或使用顶部搜索框。"
-        />
+        <>
+          <EmptyState
+            title="没有匹配的资源"
+            hint="试试清除筛选条件，或使用顶部搜索框。"
+          />
+          <div style={{ marginTop: 16, display: 'flex', gap: 10, justifyContent: 'center', flexWrap: 'wrap', alignItems: 'center' }}>
+            <Link href="/resources" className="btn-primary" style={{ fontSize: 14 }}>
+              清除筛选
+            </Link>
+            {tags.length > 0 && (
+              <span style={{ fontSize: 13, color: 'var(--muted)' }}>
+                热门：
+                {tags.slice(0, 8).map((t) => (
+                  <Link
+                    key={t}
+                    href={`/tags/${encodeURIComponent(t)}`}
+                    style={{ color: 'var(--brand)', marginLeft: 8, textDecoration: 'none' }}
+                  >
+                    #{t}
+                  </Link>
+                ))}
+              </span>
+            )}
+          </div>
+        </>
       ) : sp.view === 'list' ? (
         <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
           {pageItems.map((r) => {

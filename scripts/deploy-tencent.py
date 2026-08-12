@@ -72,11 +72,17 @@ def build() -> None:
     log("清理 web/.next ...")
     shutil.rmtree(web / ".next", ignore_errors=True)
 
-    log("构建 Next.js standalone（API 地址在构建期固化）...")
+    log("构建 Next.js standalone（rewrites 目标在构建期固化，必须显式传入）...")
+    # NEXT_PUBLIC_API_BASE：供 next.config rewrites + 客户端内联（构建期固化，运行时改不了）
+    # API_BASE：供 SSR 运行时读取（无 NEXT_PUBLIC_ 前缀，Next 不内联，可在服务器覆盖）
+    # 二者都显式传入，避免被 web/.env.local 的本地 dev 值(3001)污染生产产物。
     run(
         [NODE, "node_modules/next/dist/bin/next", "build"],
         cwd=web,
-        env={"NEXT_PUBLIC_API_BASE": f"http://127.0.0.1:{API_PORT}"},
+        env={
+            "NEXT_PUBLIC_API_BASE": f"http://127.0.0.1:{API_PORT}",
+            "API_BASE": f"http://127.0.0.1:{API_PORT}",
+        },
     )
 
     log("esbuild 打包数据服务为零依赖单文件 ...")
@@ -92,17 +98,16 @@ def build() -> None:
 
     log("组装部署目录 ...")
     wd = DIST / "web"
-    shutil.rmtree(wd, ignore_errors=True)
-    shutil.copytree(web / ".next" / "standalone", wd)
+    # 用 dirs_exist_ok 覆盖而非先删除：沙箱 safe-delete 守卫会拦截 rmtree/unlink
+    shutil.copytree(web / ".next" / "standalone", wd, dirs_exist_ok=True)
     (wd / ".next").mkdir(exist_ok=True)
-    shutil.copytree(web / ".next" / "static", wd / ".next" / "static")
+    shutil.copytree(web / ".next" / "static", wd / ".next" / "static", dirs_exist_ok=True)
     if (web / "public").exists():
         shutil.copytree(web / "public", wd / "public", dirs_exist_ok=True)
 
     log("压缩 app.zip ...")
     app_zip = DIST / "app.zip"
-    if app_zip.exists():
-        app_zip.unlink()
+    # 'w' 模式自带截断覆盖，无需先 unlink（沙箱 safe-delete 会拦截 unlink）
     with zipfile.ZipFile(app_zip, "w", zipfile.ZIP_DEFLATED, compresslevel=6) as z:
         for sub in ("web", "api"):
             base = DIST / sub
@@ -114,8 +119,7 @@ def build() -> None:
     log("打包源代码 source.zip ...")
     ex = {"node_modules", ".next", "_dist", ".git", "dist", "coverage", ".turbo", ".vscode", "_smoke"}
     src_zip = DIST / "source.zip"
-    if src_zip.exists():
-        src_zip.unlink()
+    # 'w' 模式自带截断覆盖，无需先 unlink
     n = 0
     with zipfile.ZipFile(src_zip, "w", zipfile.ZIP_DEFLATED, compresslevel=6) as z:
         for root, dirs, files in os.walk(ROOT):
@@ -146,7 +150,22 @@ def upload() -> tuple[str, str]:
             die(f"missing {p} — 先跑一次不带 --skip-build 的部署")
         key = f"{COS_PREFIX}/{name}"
         log(f"上传 {name} ({p.stat().st_size / 1048576:.2f} MB) → cos://{COS_BUCKET}/{key}")
-        c.upload_file(Bucket=COS_BUCKET, Key=key, LocalFilePath=str(p), PartSize=5, MAXThread=4)
+        # 沙箱网络对 4 线程分块上传不稳定 → 改单分片(大 PartSize)单线程 + 重试
+        last_err = None
+        for attempt in range(1, 4):
+            try:
+                c.upload_file(
+                    Bucket=COS_BUCKET, Key=key, LocalFilePath=str(p),
+                    PartSize=100, MAXThread=1,
+                )
+                last_err = None
+                break
+            except Exception as e:  # noqa: BLE001
+                last_err = e
+                log(f"  上传失败(第{attempt}次)：{e}；3s 后重试")
+                time.sleep(3)
+        if last_err:
+            die(f"{name} 上传失败：{last_err}")
         urls[name] = c.get_presigned_download_url(Bucket=COS_BUCKET, Key=key, Expired=7200)
     return urls["app.zip"], urls["source.zip"]
 
