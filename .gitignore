@@ -39,3 +39,48 @@ web/_*.html
 
 # 本地 AI 工程记忆（非项目源码）
 .workbuddy/
+
+# 部署脚本含腾讯云密钥，禁止提交
+_tat_redeploy_pinned.py
+_tat_redeploy.py
+_tat_deploy.py
+_tat_deploy2.py
+_tat_deploy3.py
+_tat_diag.py
+_tat_diag2.py
+_tat_diag3.py
+
+# 本地抓取/验证/打包临时产物（禁止提交）
+_cc_*.html
+_build_small.py
+_chk.py
+_cos_test.py
+_gh_release_upload.py
+_mk_srczip.py
+_mkcommit.py
+_mkcommit2.py
+_pack_fix.py
+_root_tree.txt
+_mtmp/
+_v/
+_v_*.html
+_verify/
+_verify_pub/
+_nextb*/
+.nextbuild/
+web/.nextb*/
+web/.nextbuild/
+
+# 本地构建/沙箱临时文件
+_build_shim.cjs
+_kill_orphans.py
+
+# 后端生成物 / 临时日志
+backend/dist_old/
+backend/emit_log.txt
+backend/prisma/prisma-extensions.*
+scripts/__pycache__/
+
+# 部署暂存 zip（非源码）
+deploy/_t.zip
+deploy/source.zip

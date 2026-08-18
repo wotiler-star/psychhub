@@ -1,6 +1,20 @@
-import Link from 'next/link';
+'use client';
+import LocaleLink from '@/components/LocaleLink';
+import { getDict } from '@/i18n/dictionaries';
+import { Locale } from '@/i18n/config';
 
-export default function Footer() {
+const HEADINGS: Record<Locale, { nav: string; legal: string }> = {
+  zh: { nav: '导航', legal: '法律' },
+  en: { nav: 'Navigate', legal: 'Legal' },
+  ja: { nav: 'ナビ', legal: '法定' },
+  ko: { nav: '둘러보기', legal: '법적' },
+  es: { nav: 'Navegar', legal: 'Legal' },
+  fr: { nav: 'Naviguer', legal: 'Légal' },
+};
+
+export default function Footer({ locale }: { locale: Locale }) {
+  const t = getDict(locale);
+  const h = HEADINGS[locale];
   return (
     <footer
       style={{
@@ -20,27 +34,36 @@ export default function Footer() {
         }}
       >
         <div style={{ maxWidth: 320 }}>
-          <div style={{ fontWeight: 800, marginBottom: 8 }}>心理资源聚合</div>
-          <p style={{ color: 'var(--muted)', fontSize: 14, lineHeight: 1.7 }}>
-            中文心理学资源导航与科普平台。我们聚合全球优质心理资源、公益求助渠道与公开版权测评，
-            帮助你在 3 次点击内找到所需。本平台不提供在线诊疗服务。
-          </p>
+          <div style={{ fontWeight: 800, marginBottom: 8 }}>{t.siteName}</div>
+          <p style={{ color: 'var(--muted)', fontSize: 14, lineHeight: 1.7 }}>{t.tagline}</p>
         </div>
         <nav aria-label="页脚导航" style={{ display: 'flex', gap: 40, flexWrap: 'wrap' }}>
           <div>
-            <div style={{ fontWeight: 700, marginBottom: 8 }}>导航</div>
+            <div style={{ fontWeight: 700, marginBottom: 8 }}>{h.nav}</div>
             <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
-              <Link href="/resources" style={{ color: 'var(--muted)', fontSize: 14 }}>资源导航</Link>
-              <Link href="/assessments" style={{ color: 'var(--muted)', fontSize: 14 }}>心理测评</Link>
-              <Link href="/helplines" style={{ color: 'var(--muted)', fontSize: 14 }}>求助资源</Link>
-              <Link href="/about" style={{ color: 'var(--muted)', fontSize: 14 }}>关于我们</Link>
+              <LocaleLink href="/resources" locale={locale} style={{ color: 'var(--muted)', fontSize: 14 }}>
+                {t.sections.resources}
+              </LocaleLink>
+              <LocaleLink href="/assessments" locale={locale} style={{ color: 'var(--muted)', fontSize: 14 }}>
+                {t.sections.assessments}
+              </LocaleLink>
+              <LocaleLink href="/helplines" locale={locale} style={{ color: 'var(--muted)', fontSize: 14 }}>
+                {t.sections.helplines}
+              </LocaleLink>
+              <LocaleLink href="/about" locale={locale} style={{ color: 'var(--muted)', fontSize: 14 }}>
+                {t.sections.about}
+              </LocaleLink>
             </div>
           </div>
           <div>
-            <div style={{ fontWeight: 700, marginBottom: 8 }}>法律</div>
+            <div style={{ fontWeight: 700, marginBottom: 8 }}>{h.legal}</div>
             <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
-              <Link href="/privacy" style={{ color: 'var(--muted)', fontSize: 14 }}>隐私政策</Link>
-              <a href="/helplines" style={{ color: 'var(--muted)', fontSize: 14 }}>危机求助</a>
+              <LocaleLink href="/privacy" locale={locale} style={{ color: 'var(--muted)', fontSize: 14 }}>
+                {t.sections.privacy}
+              </LocaleLink>
+              <LocaleLink href="/helplines" locale={locale} style={{ color: 'var(--muted)', fontSize: 14 }}>
+                {t.sections.helplines}
+              </LocaleLink>
             </div>
           </div>
         </nav>
@@ -54,7 +77,7 @@ export default function Footer() {
           borderTop: '1px solid var(--line)',
         }}
       >
-        © {new Date().getFullYear()} 心理资源聚合 · 本平台内容仅供信息参考，不构成任何医疗诊断或治疗建议。
+        © {new Date().getFullYear()} {t.siteName} · {t.common.disclaimer}
       </div>
     </footer>
   );

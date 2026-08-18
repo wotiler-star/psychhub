@@ -4,6 +4,8 @@ import { useMembership } from '@/lib/membership';
 import { isVipAssessment, canAccessVip, VIP_MIN_TIER } from '@/lib/vipAssessments';
 import type { AssessmentQuestion, AssessmentBand } from '@/lib/types';
 import AssessmentQuiz from '@/components/AssessmentQuiz';
+import LocaleLink from '@/components/LocaleLink';
+import { Locale } from '@/i18n/config';
 
 interface Props {
   slug: string;
@@ -11,9 +13,10 @@ interface Props {
   type?: string | null;
   questions: AssessmentQuestion[];
   bands: AssessmentBand[];
+  locale?: Locale;
 }
 
-export default function AssessmentGate({ slug, title, type, questions, bands }: Props) {
+export default function AssessmentGate({ slug, title, type, questions, bands, locale }: Props) {
   const { state, tier, isExpired, ready } = useMembership();
 
   // 非专属测评：无需门禁，直接渲染
@@ -96,8 +99,9 @@ export default function AssessmentGate({ slug, title, type, questions, bands }: 
         <a className="btn-primary" href="/membership">
           开通会员解锁 →
         </a>
-        <a
+        <LocaleLink
           href="/assessments"
+          locale={locale}
           style={{
             height: 44,
             display: 'inline-flex',
@@ -112,7 +116,7 @@ export default function AssessmentGate({ slug, title, type, questions, bands }: 
           }}
         >
           浏览免费测评
-        </a>
+        </LocaleLink>
       </div>
     </div>
   );

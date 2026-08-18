@@ -4,24 +4,30 @@ import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 import { useAuth } from '@/components/AuthProvider';
 import { useMembership } from '@/lib/membership';
+import LocaleLink from '@/components/LocaleLink';
+import LanguageSwitcher from '@/components/LanguageSwitcher';
+import { localizedPath } from '@/i18n/helpers';
+import { getDict } from '@/i18n/dictionaries';
+import { Locale } from '@/i18n/config';
 
 // 主导航：一级栏目 ≤ 7（原则 R2.1：米勒法则），全部能回链业务目标
-const NAV = [
-  { href: '/', label: '首页' },
-  { href: '/resources', label: '资源导航' },
-  { href: '/assessments', label: '心理测评' },
-  { href: '/helplines', label: '求助资源' },
-  { href: '/articles', label: '心理资讯' },
-  { href: '/counselors', label: '找咨询师' },
-  { href: '/community', label: '社区' },
+const NAV: { href: string; key: keyof ReturnType<typeof getDict>['nav'] }[] = [
+  { href: '/', key: 'home' },
+  { href: '/resources', key: 'resources' },
+  { href: '/assessments', key: 'assessments' },
+  { href: '/helplines', key: 'helplines' },
+  { href: '/articles', key: 'articles' },
+  { href: '/counselors', key: 'counselors' },
+  { href: '/community', key: 'community' },
 ];
 
-export default function Header() {
+export default function Header({ locale }: { locale: Locale }) {
   const { user, loading, logout } = useAuth();
   const { state, tier } = useMembership();
   const [theme, setTheme] = useState<'light' | 'dark'>('light');
   const [navOpen, setNavOpen] = useState(false);
   const pathname = usePathname();
+  const t = getDict(locale);
 
   // 路由变化时自动收起移动端菜单
   useEffect(() => {
@@ -67,8 +73,9 @@ export default function Header() {
           position: 'relative',
         }}
       >
-        <Link
+        <LocaleLink
           href="/"
+          locale={locale}
           style={{
             display: 'flex',
             alignItems: 'center',
@@ -93,17 +100,18 @@ export default function Header() {
           >
             心
           </span>
-          心理资源聚合
-        </Link>
+          {t.siteName}
+        </LocaleLink>
         <nav
           aria-label="主导航"
           className="nav-inline"
           style={{ display: 'flex', gap: 4, alignItems: 'center', flexWrap: 'wrap' }}
         >
           {NAV.map((n) => (
-            <Link
+            <LocaleLink
               key={n.href}
               href={n.href}
+              locale={locale}
               style={{
                 padding: '8px 12px',
                 borderRadius: 8,
@@ -114,8 +122,8 @@ export default function Header() {
                 alignItems: 'center',
               }}
             >
-              {n.label}
-            </Link>
+              {t.nav[n.key]}
+            </LocaleLink>
           ))}
           {!loading && user ? (
             <>
@@ -171,7 +179,7 @@ export default function Header() {
                     textDecoration: 'none',
                   }}
                 >
-                  会员
+                  {t.buttons.membership}
                 </Link>
               )}
               <button
@@ -209,12 +217,12 @@ export default function Header() {
                 会员
               </Link>
               <Link className="btn-primary" href="/login" style={{ marginLeft: 6 }}>
-                登录
+                {t.buttons.login}
               </Link>
             </>
           ) : null}
           {/* 全站搜索框（GET 跳转到 /search，SSR 友好） */}
-          <form action="/search" method="get" style={{ display: 'flex', alignItems: 'center', marginLeft: 4 }}>
+          <form action={localizedPath('/search', locale)} method="get" style={{ display: 'flex', alignItems: 'center', marginLeft: 4 }}>
             <input
               name="q"
               placeholder="搜索…"
@@ -232,6 +240,7 @@ export default function Header() {
               }}
             />
           </form>
+          <LanguageSwitcher locale={locale} />
           <button
             type="button"
             onClick={() => window.dispatchEvent(new CustomEvent('open-command-palette'))}
@@ -299,11 +308,11 @@ export default function Header() {
               alignItems: 'center',
             }}
           >
-            提交收录
+            {t.buttons.submit}
           </Link>
-          <a className="btn-primary" href="/helplines" style={{ marginLeft: 6 }}>
-            需要帮助？
-          </a>
+          <LocaleLink href="/helplines" locale={locale} className="btn-primary" style={{ marginLeft: 6 }}>
+            {t.buttons.needHelp}
+          </LocaleLink>
         </nav>
         <button
           type="button"

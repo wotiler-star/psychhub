@@ -11,18 +11,19 @@ export interface LocaleMeta {
   code: Locale;
   htmlLang: string; // <html lang> 用，如 zh-CN / en / ja
   hreflang: string; // hreflang 属性用，如 zh-CN / en / ja
+  ogLocale: string; // OpenGraph locale 用，如 zh_CN / en_US（下划线格式）
   name: string; // 本地语言自称呼
   englishName: string;
   dir: 'ltr' | 'rtl';
 }
 
 export const localeMeta: Record<Locale, LocaleMeta> = {
-  zh: { code: 'zh', htmlLang: 'zh-CN', hreflang: 'zh-CN', name: '中文', englishName: 'Chinese', dir: 'ltr' },
-  en: { code: 'en', htmlLang: 'en', hreflang: 'en', name: 'English', englishName: 'English', dir: 'ltr' },
-  ja: { code: 'ja', htmlLang: 'ja', hreflang: 'ja', name: '日本語', englishName: 'Japanese', dir: 'ltr' },
-  ko: { code: 'ko', htmlLang: 'ko', hreflang: 'ko', name: '한국어', englishName: 'Korean', dir: 'ltr' },
-  es: { code: 'es', htmlLang: 'es', hreflang: 'es', name: 'Español', englishName: 'Spanish', dir: 'ltr' },
-  fr: { code: 'fr', htmlLang: 'fr', hreflang: 'fr', name: 'Français', englishName: 'French', dir: 'ltr' },
+  zh: { code: 'zh', htmlLang: 'zh-CN', hreflang: 'zh-CN', ogLocale: 'zh_CN', name: '中文', englishName: 'Chinese', dir: 'ltr' },
+  en: { code: 'en', htmlLang: 'en', hreflang: 'en', ogLocale: 'en_US', name: 'English', englishName: 'English', dir: 'ltr' },
+  ja: { code: 'ja', htmlLang: 'ja', hreflang: 'ja', ogLocale: 'ja_JP', name: '日本語', englishName: 'Japanese', dir: 'ltr' },
+  ko: { code: 'ko', htmlLang: 'ko', hreflang: 'ko', ogLocale: 'ko_KR', name: '한국어', englishName: 'Korean', dir: 'ltr' },
+  es: { code: 'es', htmlLang: 'es', hreflang: 'es', ogLocale: 'es_ES', name: 'Español', englishName: 'Spanish', dir: 'ltr' },
+  fr: { code: 'fr', htmlLang: 'fr', hreflang: 'fr', ogLocale: 'fr_FR', name: 'Français', englishName: 'French', dir: 'ltr' },
 };
 
 // hreflang 值映射（用于 alternates.languages 的 key）

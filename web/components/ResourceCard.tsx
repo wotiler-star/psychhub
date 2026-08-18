@@ -3,13 +3,17 @@ import { RESOURCE_TYPE_META } from '@/lib/format';
 import BookmarkButton from '@/components/BookmarkButton';
 import CompareToggle from '@/components/CompareToggle';
 import Link from 'next/link';
+import { Locale } from '@/i18n/config';
+import { localizedPath } from '@/i18n/helpers';
+import { tResourceType } from '@/i18n/content';
 
-export default function ResourceCard({ resource }: { resource: Resource }) {
+export default function ResourceCard({ resource, locale }: { resource: Resource; locale?: Locale }) {
   const meta = RESOURCE_TYPE_META[resource.type] ?? { label: resource.type, chip: '' };
+  const href = localizedPath(`/resources/${resource.id}`, locale ?? 'zh');
   return (
     <div className="card" style={{ position: 'relative', display: 'block' }}>
       <Link
-        href={`/resources/${resource.id}`}
+        href={href}
         style={{ display: 'block', color: 'var(--ink)', textDecoration: 'none', paddingRight: 44 }}
       >
         <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 8 }}>

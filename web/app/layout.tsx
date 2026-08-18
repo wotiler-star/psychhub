@@ -8,37 +8,41 @@ import { AuthProvider } from '@/components/AuthProvider';
 import { DEFAULT_OG_IMAGE } from '@/lib/og';
 import { websiteJsonLd, JsonLdScript } from '@/lib/jsonld';
 import { getLocaleFromHeader } from '@/i18n/server';
-import { localeMeta } from '@/i18n/config';
+import { locales, localeMeta } from '@/i18n/config';
 
 const SITE_URL = process.env.NEXT_PUBLIC_SITE_URL || 'https://psych-hub.example.com';
 
-export const metadata: Metadata = {
-  metadataBase: new URL(SITE_URL),
-  title: {
-    default: '心理资源聚合 | 中文心理学资源导航与科普平台',
-    template: '%s | 心理资源聚合',
-  },
-  applicationName: '心理资源聚合',
-  description:
-    '中文心理学资源聚合平台：聚合全球优质心理网站、公益求助热线与公开版权测评，3 次点击内找到所需。不提供在线诊疗，仅做导航与转介。',
-  keywords: ['心理学', '心理资源', '心理咨询', '心理测评', '求助热线', '心理健康', 'PHQ-9', 'GAD-7', '焦虑', '抑郁', '失眠', '危机干预'],
-  openGraph: {
-    type: 'website',
-    locale: 'zh_CN',
-    title: '心理资源聚合 | 中文心理学资源导航与科普平台',
-    description: '聚合全球优质心理资源、公益求助渠道与公开版权测评的一站式中文平台。',
-    siteName: '心理资源聚合',
-    images: [{ url: DEFAULT_OG_IMAGE, width: 1200, height: 630, alt: '心理资源聚合' }],
-  },
-  twitter: {
-    card: 'summary_large_image',
-    title: '心理资源聚合 | 中文心理学资源导航与科普平台',
-    description: '聚合全球优质心理资源、公益求助渠道与公开版权测评的一站式中文平台。',
-    images: [DEFAULT_OG_IMAGE],
-  },
-  robots: { index: true, follow: true },
-  category: 'health',
-};
+export async function generateMetadata(): Promise<Metadata> {
+  const locale = await getLocaleFromHeader();
+  const ogLocale = localeMeta[locale].ogLocale;
+  return {
+    metadataBase: new URL(SITE_URL),
+    title: {
+      default: '心理资源聚合 | 中文心理学资源导航与科普平台',
+      template: '%s | 心理资源聚合',
+    },
+    applicationName: '心理资源聚合',
+    description:
+      '中文心理学资源聚合平台：聚合全球优质心理网站、公益求助热线与公开版权测评，3 次点击内找到所需。不提供在线诊疗，仅做导航与转介。',
+    keywords: ['心理学', '心理资源', '心理咨询', '心理测评', '求助热线', '心理健康', 'PHQ-9', 'GAD-7', '焦虑', '抑郁', '失眠', '危机干预'],
+    openGraph: {
+      type: 'website',
+      locale: ogLocale,
+      title: '心理资源聚合 | 中文心理学资源导航与科普平台',
+      description: '聚合全球优质心理资源、公益求助渠道与公开版权测评的一站式中文平台。',
+      siteName: '心理资源聚合',
+      images: [{ url: DEFAULT_OG_IMAGE, width: 1200, height: 630, alt: '心理资源聚合' }],
+    },
+    twitter: {
+      card: 'summary_large_image',
+      title: '心理资源聚合 | 中文心理学资源导航与科普平台',
+      description: '聚合全球优质心理资源、公益求助渠道与公开版权测评的一站式中文平台。',
+      images: [DEFAULT_OG_IMAGE],
+    },
+    robots: { index: true, follow: true },
+    category: 'health',
+  };
+}
 
 // 视口与浏览器 UI 主题色（明暗两态），避免移动端地址栏闪烁/突兀
 export const viewport: Viewport = {
@@ -76,6 +80,12 @@ export default async function RootLayout({ children }: { children: React.ReactNo
         <link rel="alternate" type="text/plain" href="/llms.txt" title="llms.txt" />
         {/* RSS 订阅源发现 */}
         <link rel="alternate" type="application/rss+xml" href="/rss.xml" title="RSS Feed" />
+        {/* OpenGraph 备用语言 locale（社交分享卡片多语言提示） */}
+        {locales
+          .filter((l) => l !== locale)
+          .map((l) => (
+            <meta key={l} property="og:locale:alternate" content={localeMeta[l].ogLocale} />
+          ))}
       </head>
       <body style={{ margin: 0, minHeight: '100vh', display: 'flex', flexDirection: 'column' }}>
         <a className="skip-link" href="#main-content">跳到主内容</a>
