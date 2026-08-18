@@ -33,6 +33,9 @@ INSTANCE_ID = "lhins-mprw5b1n"
 PUBLIC_IP = "175.178.23.30"
 WEB_PORT = 3500
 API_PORT = 3501
+# 生产公网 URL：用于 canonical / hreflang / sitemap，构建期内联（NEXT_PUBLIC_ 前缀）。
+# 必须与 verify() 使用的 PUBLIC_IP:WEB_PORT 一致，否则上线后规范链接指向 localhost。
+SITE_URL = f"http://{PUBLIC_IP}:{WEB_PORT}"
 COS_BUCKET = "ainav-deploy-1456824769"
 COS_PREFIX = "psychhub"
 REMOTE_ROOT = r"C:\www\psychhub"
@@ -82,6 +85,8 @@ def build() -> None:
         env={
             "NEXT_PUBLIC_API_BASE": f"http://127.0.0.1:{API_PORT}",
             "API_BASE": f"http://127.0.0.1:{API_PORT}",
+            # 生产站点根域名：覆盖 .env.local 的 localhost，确保 canonical/hreflang/sitemap 正确
+            "NEXT_PUBLIC_SITE_URL": SITE_URL,
         },
     )
 

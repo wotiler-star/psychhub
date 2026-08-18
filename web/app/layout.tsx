@@ -7,6 +7,8 @@ import CrisisBanner from '@/components/CrisisBanner';
 import { AuthProvider } from '@/components/AuthProvider';
 import { DEFAULT_OG_IMAGE } from '@/lib/og';
 import { websiteJsonLd, JsonLdScript } from '@/lib/jsonld';
+import { getLocaleFromHeader } from '@/i18n/server';
+import { localeMeta } from '@/i18n/config';
 
 const SITE_URL = process.env.NEXT_PUBLIC_SITE_URL || 'https://psych-hub.example.com';
 
@@ -20,7 +22,6 @@ export const metadata: Metadata = {
   description:
     '中文心理学资源聚合平台：聚合全球优质心理网站、公益求助热线与公开版权测评，3 次点击内找到所需。不提供在线诊疗，仅做导航与转介。',
   keywords: ['心理学', '心理资源', '心理咨询', '心理测评', '求助热线', '心理健康', 'PHQ-9', 'GAD-7', '焦虑', '抑郁', '失眠', '危机干预'],
-  alternates: { canonical: '/' },
   openGraph: {
     type: 'website',
     locale: 'zh_CN',
@@ -49,7 +50,9 @@ export const viewport: Viewport = {
   ],
 };
 
-export default function RootLayout({ children }: { children: React.ReactNode }) {
+export default async function RootLayout({ children }: { children: React.ReactNode }) {
+  const locale = await getLocaleFromHeader();
+  const htmlLang = localeMeta[locale].htmlLang;
   const orgJsonLd = {
     '@context': 'https://schema.org',
     '@type': 'Organization',
@@ -60,7 +63,7 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
     slogan: '3 次点击内，找到你需要的心理资源',
   };
   return (
-    <html lang="zh-CN" suppressHydrationWarning>
+    <html lang={htmlLang} suppressHydrationWarning>
       <head>
         {/* 防闪烁：水合前根据 localStorage / 系统偏好定主题，避免暗色闪白 */}
         <script
@@ -77,13 +80,13 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
       <body style={{ margin: 0, minHeight: '100vh', display: 'flex', flexDirection: 'column' }}>
         <a className="skip-link" href="#main-content">跳到主内容</a>
         <AuthProvider>
-          <CrisisBanner />
-          <Header />
+          <CrisisBanner locale={locale} />
+          <Header locale={locale} />
           <CommandPalette />
           <main id="main-content" tabIndex={-1} style={{ flex: 1, outline: 'none' }}>
             {children}
           </main>
-          <Footer />
+          <Footer locale={locale} />
         </AuthProvider>
         <script
           type="application/ld+json"

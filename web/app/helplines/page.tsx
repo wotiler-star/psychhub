@@ -9,6 +9,9 @@ import Breadcrumb from '@/components/Breadcrumb';
 import EmptyState from '@/components/EmptyState';
 import { breadcrumbJsonLd, itemListJsonLd, JsonLdScript } from '@/lib/jsonld';
 import { paginate, withPagination } from '@/lib/paginate';
+import { localizedPath, localeAlternates } from '@/i18n/helpers';
+import { getLocaleFromHeader } from '@/i18n/server';
+import { getDict } from '@/i18n/dictionaries';
 
 export const dynamic = 'force-dynamic';
 
@@ -19,6 +22,8 @@ export async function generateMetadata({
 }): Promise<Metadata> {
   const sp = await searchParams;
   const page = Number(sp.page) || 1;
+  const locale = await getLocaleFromHeader();
+  const t = getDict(locale);
   const helplines = await getHelplines({
     country: sp.country,
     language: sp.language,
@@ -27,10 +32,9 @@ export async function generateMetadata({
   }).catch(() => []);
   return withPagination(
     {
-      title: '求助资源 | 危机与公益心理热线',
-      description:
-        '汇总中国与全球心理危机干预、情绪支持与低价求助渠道：含 988、Samaritans、Lifeline 及国内免费热线。关键时刻用得上。',
-      alternates: { canonical: '/helplines' },
+      title: { absolute: t.meta.helplines.title },
+      description: t.meta.helplines.desc,
+      ...localeAlternates(locale, '/helplines'),
     },
     '/helplines',
     sp,
@@ -51,6 +55,9 @@ interface SP {
 
 export default async function HelplinesPage({ searchParams }: { searchParams: Promise<SP> }) {
   const sp = await searchParams;
+  const locale = await getLocaleFromHeader();
+  const t = getDict(locale);
+  const lp = (p: string) => localizedPath(p, locale);
   const helplines = await getHelplines({
     country: sp.country,
     language: sp.language,
@@ -68,15 +75,15 @@ export default async function HelplinesPage({ searchParams }: { searchParams: Pr
     <div className="container-page" style={{ padding: '32px 20px 48px' }}>
       <JsonLdScript
         data={breadcrumbJsonLd([
-          { name: '首页', url: '/' },
-          { name: '求助资源', url: '/helplines' },
+          { name: t.nav.home, url: lp('/') },
+          { name: t.sections.helplines, url: lp('/helplines') },
         ])}
       />
       <JsonLdScript
         data={itemListJsonLd(
           helplines.map((h) => ({
             name: h.name,
-            url: '/helplines',
+            url: lp('/helplines'),
             description: h.description ?? undefined,
           })),
         )}
@@ -84,15 +91,15 @@ export default async function HelplinesPage({ searchParams }: { searchParams: Pr
 
       <div className="crisis-bar" style={{ borderRadius: 12, marginBottom: 20 }}>
         <div className="container-page" style={{ padding: '10px 20px' }}>
-          <strong>⚠ 紧急情况：</strong>若有立即伤害自己或他人的风险，请直接拨打当地急救电话（中国 120 / 110），或见下方危机热线。
+          <strong>{t.pages.helplinesCrisis}</strong>
         </div>
       </div>
 
-      <Breadcrumb items={[{ name: '首页', url: '/' }, { name: '求助资源', url: '/helplines' }]} />
+      <Breadcrumb items={[{ name: t.nav.home, url: lp('/') }, { name: t.sections.helplines, url: lp('/helplines') }]} />
 
-      <h1 style={{ fontSize: 28, margin: '0 0 6px' }}>求助资源</h1>
+      <h1 style={{ fontSize: 28, margin: '0 0 6px' }}>{t.sections.helplines}</h1>
       <p style={{ color: 'var(--muted)', fontSize: 16, margin: '0 0 24px', maxWidth: 680 }}>
-        当你或身边人需要支持时，这里汇总了可靠的求助渠道。按类别、国家、语言与关键词筛选。
+        {t.helpline.subtitle}
       </p>
 
       <FilterPanel>
@@ -100,12 +107,12 @@ export default async function HelplinesPage({ searchParams }: { searchParams: Pr
       </FilterPanel>
 
       <div style={{ color: 'var(--muted)', fontSize: 14, marginBottom: 16 }}>
-        共 {helplines.length} 条热线
-        {sp.category || sp.country || sp.language || sp.q ? '（已按筛选条件）' : ''}
+        {t.pages.helplinesCount.replace('{n}', String(helplines.length))}
+        {sp.category || sp.country || sp.language || sp.q ? t.pages.filteredNote : ''}
       </div>
 
       {helplines.length === 0 ? (
-        <EmptyState title="没有符合条件的热线" hint="试试清除筛选条件，或更换关键词。" />
+        <EmptyState title={t.pages.helplinesEmpty} hint={t.pages.helplinesEmptyHint} />
       ) : (
         <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(300px, 1fr))', gap: 16 }}>
           {pageItems.map((h) => {
@@ -137,7 +144,7 @@ export default async function HelplinesPage({ searchParams }: { searchParams: Pr
                   )}
                   {h.url && (
                     <a href={h.url} target="_blank" rel="noopener noreferrer" style={{ color: 'var(--brand)' }}>
-                      访问官网 →
+                      {t.pages.visitSite}
                     </a>
                   )}
                 </div>
@@ -147,7 +154,7 @@ export default async function HelplinesPage({ searchParams }: { searchParams: Pr
         </div>
       )}
 
-      <Pager basePath="/helplines" params={sp} page={page} totalPages={totalPages} />
+      <Pager basePath={lp('/helplines')} params={sp} page={page} totalPages={totalPages} />
     </div>
   );
 }

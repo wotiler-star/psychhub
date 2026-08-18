@@ -2,18 +2,28 @@ import type { Metadata } from 'next';
 import Link from 'next/link';
 import { getArticles, getResources, getCounselors } from '@/lib/api';
 import { breadcrumbJsonLd, itemListJsonLd, JsonLdScript } from '@/lib/jsonld';
+import { localizedPath, localeAlternates } from '@/i18n/helpers';
+import { getLocaleFromHeader } from '@/i18n/server';
+import { getDict } from '@/i18n/dictionaries';
 
 export const dynamic = 'force-dynamic';
 
-export const metadata: Metadata = {
-  title: '标签导航 | 心理资源聚合',
-  description: '按标签浏览本站聚合的心理学文章、资源与咨询师，快速找到你关心的话题。',
-  alternates: { canonical: '/tags' },
-};
+export async function generateMetadata(): Promise<Metadata> {
+  const locale = await getLocaleFromHeader();
+  const t = getDict(locale);
+  return {
+    title: { absolute: t.meta.tags.title },
+    description: t.meta.tags.desc,
+    ...localeAlternates(locale, '/tags'),
+  };
+}
 
 const collator = new Intl.Collator('zh-Hans-CN');
 
 export default async function TagsIndexPage() {
+  const locale = await getLocaleFromHeader();
+  const t = getDict(locale);
+  const lp = (p: string) => localizedPath(p, locale);
   const [articles, resources, counselors] = await Promise.all([
     getArticles().catch(() => []),
     getResources().catch(() => []),
@@ -21,7 +31,7 @@ export default async function TagsIndexPage() {
   ]);
 
   const counts = new Map<string, number>();
-  const bump = (tags: string[]) => tags.forEach((t) => counts.set(t, (counts.get(t) ?? 0) + 1));
+  const bump = (tags: string[]) => tags.forEach((x) => counts.set(x, (counts.get(x) ?? 0) + 1));
   articles.forEach((a) => bump(a.tags));
   resources.forEach((r) => bump(r.tags));
   counselors.forEach((c) => bump(c.tags));
@@ -34,11 +44,11 @@ export default async function TagsIndexPage() {
 
   // 剩余标签按首字分组：拉丁字母 A-Z 在前，中文按拼音序（Intl.Collator 'zh'）
   const grouped = new Map<string, Array<[string, number]>>();
-  for (const [t, n] of rest) {
-    const ch = t[0] || '#';
+  for (const [x, n] of rest) {
+    const ch = x[0] || '#';
     const key = /[a-zA-Z]/.test(ch) ? ch.toUpperCase() : ch;
     if (!grouped.has(key)) grouped.set(key, []);
-    grouped.get(key)!.push([t, n]);
+    grouped.get(key)!.push([x, n]);
   }
   const groupKeys = Array.from(grouped.keys()).sort((a, b) => {
     const aL = /[A-Z]/.test(a);
@@ -51,31 +61,31 @@ export default async function TagsIndexPage() {
     <div className="container-page" style={{ padding: '32px 20px 48px' }}>
       <JsonLdScript
         data={breadcrumbJsonLd([
-          { name: '首页', url: '/' },
-          { name: '标签导航', url: '/tags' },
+          { name: t.nav.home, url: lp('/') },
+          { name: t.sections.tags, url: lp('/tags') },
         ])}
       />
       <JsonLdScript
         data={itemListJsonLd(
-          entries.map(([t, n]) => ({ name: t, url: `/tags/${encodeURIComponent(t)}`, description: `${n} 条内容` })),
+          entries.map(([x, n]) => ({ name: x, url: lp(`/tags/${encodeURIComponent(x)}`), description: `${n}` })),
         )}
       />
-      <h1 style={{ fontSize: 28, margin: '0 0 6px' }}>标签导航</h1>
+      <h1 style={{ fontSize: 28, margin: '0 0 6px' }}>{t.sections.tags}</h1>
       <p style={{ color: 'var(--muted)', fontSize: 16, margin: '0 0 24px', maxWidth: 680 }}>
-        按标签聚合本站的心理学文章、资源与咨询师。点击任意标签查看相关内容。
+        {t.pages.tagsSubtitle}
       </p>
 
       {/* 热门标签 Top */}
       {hot.length > 0 && (
         <section style={{ marginBottom: 32 }}>
           <h2 style={{ fontSize: 18, margin: '0 0 14px', display: 'flex', alignItems: 'center', gap: 8 }}>
-            <span className="chip chip-rose" style={{ fontSize: 12 }}>热门</span> 热门标签 Top {hot.length}
+            <span className="chip chip-rose" style={{ fontSize: 12 }}>{t.pages.tagsHotChip}</span> {t.pages.tagsHotTitle.replace('{n}', String(hot.length))}
           </h2>
           <div style={{ display: 'flex', gap: 10, flexWrap: 'wrap' }}>
-            {hot.map(([t, n]) => (
+            {hot.map(([x, n]) => (
               <Link
-                key={t}
-                href={`/tags/${encodeURIComponent(t)}`}
+                key={x}
+                href={lp(`/tags/${encodeURIComponent(x)}`)}
                 className="chip"
                 style={{
                   textDecoration: 'none',
@@ -85,7 +95,7 @@ export default async function TagsIndexPage() {
                   padding: '8px 16px',
                 }}
               >
-                {t} <span style={{ color: 'var(--muted)' }}>· {n}</span>
+                {x} <span style={{ color: 'var(--muted)' }}>· {n}</span>
               </Link>
             ))}
           </div>
@@ -109,14 +119,14 @@ export default async function TagsIndexPage() {
               {key}
             </div>
             <div style={{ display: 'flex', gap: 10, flexWrap: 'wrap' }}>
-              {grouped.get(key)!.map(([t, n]) => (
+              {grouped.get(key)!.map(([x, n]) => (
                 <Link
-                  key={t}
-                  href={`/tags/${encodeURIComponent(t)}`}
+                  key={x}
+                  href={lp(`/tags/${encodeURIComponent(x)}`)}
                   className="chip"
                   style={{ textDecoration: 'none', background: 'var(--surface-2)', color: 'var(--ink)' }}
                 >
-                  {t} <span style={{ color: 'var(--muted)' }}>· {n}</span>
+                  {x} <span style={{ color: 'var(--muted)' }}>· {n}</span>
                 </Link>
               ))}
             </div>
@@ -124,7 +134,7 @@ export default async function TagsIndexPage() {
         ))}
         {groupKeys.length === 0 && hot.length === 0 && (
           <div className="card" style={{ textAlign: 'center', color: 'var(--muted)' }}>
-            暂未收录任何标签。
+            {t.pages.tagsNoTags}
           </div>
         )}
       </section>

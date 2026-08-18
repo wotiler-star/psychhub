@@ -14,8 +14,12 @@ import ResourceSubNav from '@/components/ResourceSubNav';
 import { RESOURCE_TYPE_META } from '@/lib/format';
 import { breadcrumbJsonLd, JsonLdScript } from '@/lib/jsonld';
 import EmptyState from '@/components/EmptyState';
+import RecentlyViewed from '@/components/RecentlyViewed';
 import { paginate, withPagination } from '@/lib/paginate';
 import { sortResources } from '@/lib/resourceSort';
+import { localizedPath, localeAlternates } from '@/i18n/helpers';
+import { getLocaleFromHeader } from '@/i18n/server';
+import { getDict } from '@/i18n/dictionaries';
 
 export const dynamic = 'force-dynamic';
 
@@ -26,6 +30,8 @@ export async function generateMetadata({
 }): Promise<Metadata> {
   const sp = await searchParams;
   const page = Number(sp.page) || 1;
+  const locale = await getLocaleFromHeader();
+  const t = getDict(locale);
   const resources = await getResources({
     q: sp.q,
     type: sp.type,
@@ -35,10 +41,9 @@ export async function generateMetadata({
   }).catch(() => []);
   return withPagination(
     {
-      title: '资源导航 | 全球心理学网站目录',
-      description:
-        '按类型、国家、语言筛选全球优质心理学网站：内容媒体、执业 SaaS、在线咨询、公益组织、测评工具、冥想自助与学术教育资源。',
-      alternates: { canonical: '/resources' },
+      title: { absolute: t.meta.resources.title },
+      description: t.meta.resources.desc,
+      ...localeAlternates(locale, '/resources'),
     },
     '/resources',
     sp,
@@ -69,6 +74,9 @@ export default async function ResourcesPage({
 }) {
   const sp = await searchParams;
   const { q, type, country, language, tag } = sp;
+  const locale = await getLocaleFromHeader();
+  const t = getDict(locale);
+  const lp = (p: string) => localizedPath(p, locale);
   const all = await getResources().catch(() => [] as Resource[]);
 
   // 客户端分面过滤（数据量小，导航站常见做法：全量拉取后本地筛选/计数）
@@ -121,21 +129,22 @@ export default async function ResourcesPage({
     <div className="container-page" style={{ padding: '32px 20px 48px' }}>
       <JsonLdScript
         data={breadcrumbJsonLd([
-          { name: '首页', url: '/' },
-          { name: '心理资源导航', url: '/resources' },
+          { name: t.nav.home, url: lp('/') },
+          { name: t.sections.resources, url: lp('/resources') },
         ])}
       />
-      <h1 style={{ fontSize: 28, margin: '0 0 6px' }}>心理资源导航</h1>
+      <h1 style={{ fontSize: 28, margin: '0 0 6px' }}>{t.resource.title}</h1>
       <p style={{ color: 'var(--muted)', fontSize: 16, margin: '0 0 16px', maxWidth: 680 }}>
-        聚合全球优质心理学网站，按类型、国家与语言筛选。点击任意卡片直达原站。
-        （数据源自《全球心理学网站 TOP50 调研报告》）
+        {t.resource.subtitle}
       </p>
 
-      <ResourceSubNav />
+      <ResourceSubNav locale={locale} />
 
       <FilterPanel>
         <ResourceFilters countries={countries} languages={languages} typeCounts={typeCounts} tags={tags} tagCounts={tagCounts} />
       </FilterPanel>
+
+      <RecentlyViewed locale={locale} />
 
       <div
         style={{
@@ -155,10 +164,31 @@ export default async function ResourcesPage({
       </div>
 
       {pageItems.length === 0 ? (
-        <EmptyState
-          title="没有匹配的资源"
-          hint="试试清除筛选条件，或使用顶部搜索框。"
-        />
+        <>
+          <EmptyState
+            title="没有匹配的资源"
+            hint="试试清除筛选条件，或使用顶部搜索框。"
+          />
+          <div style={{ marginTop: 16, display: 'flex', gap: 10, justifyContent: 'center', flexWrap: 'wrap', alignItems: 'center' }}>
+            <Link href={lp('/resources')} className="btn-primary" style={{ fontSize: 14 }}>
+              {t.resource.allTypes}
+            </Link>
+            {tags.length > 0 && (
+              <span style={{ fontSize: 13, color: 'var(--muted)' }}>
+                {t.resource.allTypes}：
+                {tags.slice(0, 8).map((tg) => (
+                  <Link
+                    key={tg}
+                    href={lp(`/tags/${encodeURIComponent(tg)}`)}
+                    style={{ color: 'var(--brand)', marginLeft: 8, textDecoration: 'none' }}
+                  >
+                    #{tg}
+                  </Link>
+                ))}
+              </span>
+            )}
+          </div>
+        </>
       ) : sp.view === 'list' ? (
         <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
           {pageItems.map((r) => {
@@ -170,9 +200,9 @@ export default async function ResourcesPage({
                 style={{ display: 'flex', alignItems: 'center', gap: 12, padding: '12px 16px', flexWrap: 'wrap' }}
               >
                 <div style={{ flex: 1, minWidth: 200 }}>
-                  <Link href={`/resources/${r.id}`} style={{ color: 'var(--ink)', textDecoration: 'none', fontWeight: 600 }}>
-                    {r.name}
-                  </Link>
+                <Link href={lp(`/resources/${r.id}`)} style={{ color: 'var(--ink)', textDecoration: 'none', fontWeight: 600 }}>
+                  {r.name}
+                </Link>
                   <span style={{ fontSize: 13, color: 'var(--muted)', marginLeft: 8 }}>
                     {[r.country, r.trafficLevel].filter(Boolean).join(' · ')}
                     {' '}
@@ -207,12 +237,12 @@ export default async function ResourcesPage({
           }}
         >
           {pageItems.map((r) => (
-            <ResourceCard key={r.id} resource={r} />
+            <ResourceCard key={r.id} resource={r} locale={locale} />
           ))}
         </div>
       )}
 
-      <Pager basePath="/resources" params={sp} page={page} totalPages={totalPages} />
+      <Pager basePath={lp('/resources')} params={sp} page={page} totalPages={totalPages} />
       <CompareBar />
     </div>
   );

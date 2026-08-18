@@ -272,3 +272,19 @@ a:hover { text-decoration: underline; }
     scroll-behavior: auto !important;
   }
 }
+
+/* ===== 测评报告打印：仅保留 #assessment-report（见 AssessmentQuiz）===== */
+@media print {
+  body * { visibility: hidden !important; }
+  #assessment-report,
+  #assessment-report * { visibility: visible !important; }
+  #assessment-report {
+    position: absolute;
+    left: 0;
+    top: 0;
+    width: 100%;
+    margin: 0;
+    border: none !important;
+    box-shadow: none !important;
+  }
+}

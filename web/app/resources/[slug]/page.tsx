@@ -15,6 +15,7 @@ import BookmarkButton from '@/components/BookmarkButton';
 import CompareToggle from '@/components/CompareToggle';
 import Pager from '@/components/Pager';
 import EmptyState from '@/components/EmptyState';
+import ResourceViewTracker from '@/components/ResourceViewTracker';
 import {
   breadcrumbJsonLd,
   itemListJsonLd,
@@ -22,6 +23,21 @@ import {
 } from '@/lib/jsonld';
 import { paginate } from '@/lib/paginate';
 import { sortResources } from '@/lib/resourceSort';
+import { Locale } from '@/i18n/config';
+import { localizedPath, localeAlternates } from '@/i18n/helpers';
+import { getLocaleFromHeader } from '@/i18n/server';
+import { getDict } from '@/i18n/dictionaries';
+import { tResourceType } from '@/i18n/content';
+
+// 详情页通用小标题（中文为底，其余语言取译文）
+const DETAIL_HEADINGS: Record<string, Record<Locale, string>> = {
+  intro: { zh: '简介', en: 'About', ja: '概要', ko: '소개', es: 'Acerca de', fr: 'À propos' },
+  tags: { zh: '标签', en: 'Tags', ja: 'タグ', ko: '태그', es: 'Etiquetas', fr: 'Étiquettes' },
+  suitable: { zh: '适合人群', en: 'Who it’s for', ja: 'こんな方へ', ko: '적합 대상', es: 'Para quién', fr: 'Pour qui' },
+  related: { zh: '相关资源', en: 'Related resources', ja: '関連リソース', ko: '관련 리소스', es: 'Recursos relacionados', fr: 'Ressources liées' },
+  aboutTitle: { zh: '关于本站收录', en: 'About this listing', ja: 'この掲載について', ko: '이 등록에 대하여', es: 'Sobre esta ficha', fr: 'À propos de cette fiche' },
+};
+const dh = (k: string, locale: Locale) => DETAIL_HEADINGS[k]?.[locale] ?? DETAIL_HEADINGS[k]?.zh ?? k;
 
 export const dynamic = 'force-dynamic';
 
@@ -47,17 +63,21 @@ export async function generateMetadata({
   params: Promise<{ slug: string }>;
 }): Promise<Metadata> {
   const { slug } = await params;
+  const locale = await getLocaleFromHeader();
+  const t = getDict(locale);
   const type = resolveType(slug);
   // 子版块落地页
   if (type) {
     const meta = RESOURCE_TYPE_META[type];
+    const label = tResourceType(type, locale, meta.label);
+    const title = `${label} | ${t.siteName}`;
     return {
-      title: `${meta.label} | 心理学资源导航`,
+      title: { absolute: title },
       description: meta.desc,
-      alternates: { canonical: `/resources/${type.toLowerCase()}` },
+      ...localeAlternates(locale, `/resources/${type.toLowerCase()}`),
       openGraph: {
         type: 'website',
-        title: `${meta.label} | 心理学资源导航`,
+        title,
         description: meta.desc,
       },
     };
@@ -70,9 +90,9 @@ export async function generateMetadata({
       r.description ??
       `发现并访问「${r.name}」——一个${meta.label}类心理学资源${r.country ? `（${r.country}）` : ''}。`;
     return {
-      title: `${r.name} | 资源导航`,
+      title: { absolute: `${r.name} | ${t.siteName}` },
       description: desc,
-      alternates: { canonical: `/resources/${r.id}` },
+      ...localeAlternates(locale, `/resources/${r.id}`),
       openGraph: {
         type: 'article',
         title: r.name,
@@ -80,7 +100,7 @@ export async function generateMetadata({
       },
     };
   } catch {
-    return { title: '资源未找到' };
+    return { title: t.common.notFoundTitle };
   }
 }
 
@@ -101,6 +121,10 @@ export default async function ResourceRoute({
 // ───────────────────────── 子版块落地页 ─────────────────────────
 async function SubBoard({ type, sp }: { type: ResourceType; sp: SP }) {
   const meta = RESOURCE_TYPE_META[type];
+  const locale = await getLocaleFromHeader();
+  const t = getDict(locale);
+  const lp = (p: string) => localizedPath(p, locale);
+  const label = tResourceType(type, locale, meta.label);
   const all = await getResources({ type }).catch(() => [] as Resource[]);
 
   const ql = (sp.q || '').toLowerCase();
@@ -145,17 +169,17 @@ async function SubBoard({ type, sp }: { type: ResourceType; sp: SP }) {
     <div className="container-page" style={{ padding: '32px 20px 48px' }}>
       <JsonLdScript
         data={breadcrumbJsonLd([
-          { name: '首页', url: '/' },
-          { name: '资源导航', url: '/resources' },
-          { name: meta.label, url: basePath },
+          { name: t.nav.home, url: lp('/') },
+          { name: t.sections.resources, url: lp('/resources') },
+          { name: label, url: lp(basePath) },
         ])}
       />
 
       <Breadcrumb
         items={[
-          { name: '首页', url: '/' },
-          { name: '资源导航', url: '/resources' },
-          { name: meta.label, url: basePath },
+          { name: t.nav.home, url: lp('/') },
+          { name: t.sections.resources, url: lp('/resources') },
+          { name: label, url: lp(basePath) },
         ]}
       />
 
@@ -163,17 +187,17 @@ async function SubBoard({ type, sp }: { type: ResourceType; sp: SP }) {
         <div style={{ display: 'flex', alignItems: 'center', gap: 14, flexWrap: 'wrap' }}>
           <div style={{ fontSize: 40, lineHeight: 1 }}>{meta.emoji}</div>
           <div>
-            <h1 style={{ fontSize: 28, margin: 0 }}>{meta.label}</h1>
+            <h1 style={{ fontSize: 28, margin: 0 }}>{label}</h1>
             <div style={{ color: 'var(--muted)', fontSize: 14, marginTop: 4 }}>
-              共 {all.length} 个{meta.label}类资源
+              共 {all.length} 个{label}类资源
             </div>
           </div>
           <a
-            href="/resources"
+            href={lp('/resources')}
             className="chip"
             style={{ marginLeft: 'auto', textDecoration: 'none', color: 'var(--brand)' }}
           >
-            查看全部资源 →
+            {t.resource.allTypes} →
           </a>
         </div>
         <p
@@ -189,7 +213,7 @@ async function SubBoard({ type, sp }: { type: ResourceType; sp: SP }) {
         </p>
       </section>
 
-      <ResourceSubNav active={type.toLowerCase()} />
+      <ResourceSubNav active={type.toLowerCase()} locale={locale} />
 
       <FilterPanel>
         <ResourceFilters
@@ -231,7 +255,7 @@ async function SubBoard({ type, sp }: { type: ResourceType; sp: SP }) {
                 style={{ display: 'flex', alignItems: 'center', gap: 12, padding: '12px 16px', flexWrap: 'wrap' }}
               >
                 <div style={{ flex: 1, minWidth: 200 }}>
-                  <Link href={`/resources/${r.id}`} style={{ color: 'var(--ink)', textDecoration: 'none', fontWeight: 600 }}>
+                  <Link href={lp(`/resources/${r.id}`)} style={{ color: 'var(--ink)', textDecoration: 'none', fontWeight: 600 }}>
                     {r.name}
                   </Link>
                   <span style={{ fontSize: 13, color: 'var(--muted)', marginLeft: 8 }}>
@@ -268,19 +292,19 @@ async function SubBoard({ type, sp }: { type: ResourceType; sp: SP }) {
           }}
         >
           {pageItems.map((r) => (
-            <ResourceCard key={r.id} resource={r} />
+            <ResourceCard key={r.id} resource={r} locale={locale} />
           ))}
         </div>
       )}
 
-      <Pager basePath={basePath} params={sp} page={page} totalPages={totalPages} />
+      <Pager basePath={lp(basePath)} params={sp} page={page} totalPages={totalPages} />
 
       {pageItems.length > 0 && (
         <JsonLdScript
           data={itemListJsonLd(
             pageItems.map((x) => ({
               name: x.name,
-              url: `/resources/${x.id}`,
+              url: lp(`/resources/${x.id}`),
               description: x.description ?? undefined,
             })),
           )}
@@ -301,6 +325,9 @@ async function Detail({ slug }: { slug: string }) {
   }
 
   const meta = RESOURCE_TYPE_META[r.type] ?? { label: r.type, chip: '' };
+  const locale = await getLocaleFromHeader();
+  const t = getDict(locale);
+  const lp = (p: string) => localizedPath(p, locale);
 
   let sameType = await getResources({ type: r.type }).catch(() => [] as Resource[]);
   let related = sameType
@@ -326,7 +353,7 @@ async function Detail({ slug }: { slug: string }) {
     name: r.name,
     description: r.description ?? undefined,
     url: r.url,
-    category: meta.label,
+    category: tResourceType(r.type, locale, meta.label),
     ...(r.tags?.length ? { keywords: r.tags.join(', ') } : {}),
     brand: { '@type': 'Brand', name: r.name },
   };
@@ -335,11 +362,13 @@ async function Detail({ slug }: { slug: string }) {
     <div className="container-page" style={{ padding: '32px 20px 48px', maxWidth: 920 }}>
       <Breadcrumb
         items={[
-          { name: '首页', url: '/' },
-          { name: '资源导航', url: '/resources' },
-          { name: r.name, url: `/resources/${r.id}` },
+          { name: t.nav.home, url: lp('/') },
+          { name: t.sections.resources, url: lp('/resources') },
+          { name: r.name, url: lp(`/resources/${r.id}`) },
         ]}
       />
+
+      <ResourceViewTracker id={r.id} name={r.name} url={r.url} subtitle={r.description ?? undefined} />
 
       <div
         style={{
@@ -382,7 +411,7 @@ async function Detail({ slug }: { slug: string }) {
 
       {r.description && (
         <section style={{ marginTop: 24 }}>
-          <h2 style={{ fontSize: 18, margin: '0 0 8px' }}>简介</h2>
+          <h2 style={{ fontSize: 18, margin: '0 0 8px' }}>{dh('intro', locale)}</h2>
           <p style={{ color: 'var(--ink)', fontSize: 15, lineHeight: 1.8, margin: 0 }}>
             {r.description}
           </p>
@@ -391,12 +420,12 @@ async function Detail({ slug }: { slug: string }) {
 
       {r.tags && r.tags.length > 0 && (
         <section style={{ marginTop: 24 }}>
-          <h2 style={{ fontSize: 18, margin: '0 0 10px' }}>标签</h2>
+          <h2 style={{ fontSize: 18, margin: '0 0 10px' }}>{dh('tags', locale)}</h2>
           <div style={{ display: 'flex', flexWrap: 'wrap', gap: 8 }}>
             {r.tags.map((t) => (
               <Link
                 key={t}
-                href={`/tags/${encodeURIComponent(t)}`}
+                href={lp(`/tags/${encodeURIComponent(t)}`)}
                 className="chip"
                 style={{
                   background: 'var(--surface-2)',
@@ -413,7 +442,7 @@ async function Detail({ slug }: { slug: string }) {
 
       {r.suitableFor && (
         <section style={{ marginTop: 24 }}>
-          <h2 style={{ fontSize: 18, margin: '0 0 10px' }}>适合人群</h2>
+          <h2 style={{ fontSize: 18, margin: '0 0 10px' }}>{dh('suitable', locale)}</h2>
           <p style={{ color: 'var(--ink)', fontSize: 15, lineHeight: 1.8, margin: 0 }}>
             {r.suitableFor}
           </p>
@@ -429,15 +458,15 @@ async function Detail({ slug }: { slug: string }) {
           borderRadius: 8,
         }}
       >
-        <strong style={{ fontSize: 15 }}>关于本站收录</strong>
+        <strong style={{ fontSize: 15 }}>{dh('aboutTitle', locale)}</strong>
         <p style={{ fontSize: 14, color: 'var(--muted)', margin: '6px 0 0', lineHeight: 1.7 }}>
-          本平台仅聚合与展示第三方心理学资源链接，不对站外内容负责。若发现链接失效或内容不当，欢迎通过「提交收录」反馈。
+          {t.common.disclaimer}
         </p>
       </div>
 
       {related.length > 0 && (
         <section style={{ marginTop: 36, borderTop: '1px solid var(--line)', paddingTop: 24 }}>
-          <h2 style={{ fontSize: 20, margin: '0 0 16px' }}>相关资源</h2>
+          <h2 style={{ fontSize: 20, margin: '0 0 16px' }}>{dh('related', locale)}</h2>
           <div
             style={{
               display: 'grid',
@@ -446,7 +475,7 @@ async function Detail({ slug }: { slug: string }) {
             }}
           >
             {related.map((x) => (
-              <ResourceCard key={x.id} resource={x} />
+              <ResourceCard key={x.id} resource={x} locale={locale} />
             ))}
           </div>
         </section>
@@ -458,9 +487,9 @@ async function Detail({ slug }: { slug: string }) {
       />
       <JsonLdScript
         data={breadcrumbJsonLd([
-          { name: '首页', url: '/' },
-          { name: '资源导航', url: '/resources' },
-          { name: r.name, url: `/resources/${r.id}` },
+          { name: t.nav.home, url: lp('/') },
+          { name: t.sections.resources, url: lp('/resources') },
+          { name: r.name, url: lp(`/resources/${r.id}`) },
         ])}
       />
       {related.length > 0 && (
@@ -468,7 +497,7 @@ async function Detail({ slug }: { slug: string }) {
           data={itemListJsonLd(
             related.map((x) => ({
               name: x.name,
-              url: `/resources/${x.id}`,
+              url: lp(`/resources/${x.id}`),
               description: x.description ?? undefined,
             })),
           )}

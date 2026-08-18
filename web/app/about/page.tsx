@@ -1,80 +1,67 @@
 import type { Metadata } from 'next';
 import { faqJsonLd, JsonLdScript } from '@/lib/jsonld';
+import { localizedPath, localeAlternates } from '@/i18n/helpers';
+import { getLocaleFromHeader } from '@/i18n/server';
+import { getDict } from '@/i18n/dictionaries';
 
-export const metadata: Metadata = {
-  title: '关于我们 | 心理资源聚合',
-  description:
-    '心理资源聚合是一个中文心理学资源导航平台，目标是用统一分类帮用户快速找到可靠的全球心理资源与求助渠道。我们不做在线诊疗。',
-  alternates: { canonical: '/about' },
-};
+export const dynamic = 'force-dynamic';
 
-const FAQ = [
-  {
-    q: '心理资源聚合是什么？',
-    a: '心理资源聚合是一个独立的中文心理学资源导航与科普平台。我们聚合全球优质心理网站、公益求助热线和公开版权测评，帮助用户在 3 次点击内找到可靠的心理资源。',
-  },
-  {
-    q: '你们提供在线诊疗或心理咨询吗？',
-    a: '不提供。本站仅做信息聚合与转介，不参与任何诊断、治疗或咨询。涉及诊断与治疗，请务必咨询持证心理专业人士或医疗机构。',
-  },
-  {
-    q: '平台的测评准确吗？能代替诊断吗？',
-    a: '测评使用公共领域权威量表（如 PHQ-9、GAD-7）自动计分，结果仅用于自我觉察参考，不构成医学诊断。如有疑虑，请咨询专业心理人员。',
-  },
-  {
-    q: '我的数据会被收集吗？',
-    a: '测评免费、匿名，不收集可识别个人身份的信息。账号类功能仅用于本地体验与演示，详见隐私政策。',
-  },
-  {
-    q: '遇到心理危机时该怎么办？',
-    a: '请立即前往「求助资源」页面拨打公益心理危机干预热线，或在紧急情况下联系当地急救（如 120 / 110）。你并不孤单，求助是勇敢的选择。',
-  },
-];
+export async function generateMetadata(): Promise<Metadata> {
+  const locale = await getLocaleFromHeader();
+  const t = getDict(locale);
+  return {
+    title: { absolute: t.meta.about.title },
+    description: t.meta.about.desc,
+    ...localeAlternates(locale, '/about'),
+  };
+}
 
-export default function AboutPage() {
+export default async function AboutPage() {
+  const locale = await getLocaleFromHeader();
+  const t = getDict(locale);
+  const lp = (p: string) => localizedPath(p, locale);
+  const FAQ = t.pages.aboutFaq;
+
   return (
     <div className="container-page" style={{ padding: '32px 20px 48px', maxWidth: 820 }}>
-      <h1 style={{ fontSize: 28, margin: '0 0 6px' }}>关于我们</h1>
+      <h1 style={{ fontSize: 28, margin: '0 0 6px' }}>{t.sections.about}</h1>
       <p style={{ color: 'var(--muted)', fontSize: 16, margin: '0 0 24px' }}>
-        最后更新：2026-07-24
+        {t.pages.aboutUpdated}
       </p>
 
       <section style={{ marginBottom: 28 }}>
-        <h2 style={{ fontSize: 20 }}>我们是谁</h2>
+        <h2 style={{ fontSize: 20 }}>{t.pages.aboutWho}</h2>
         <p style={{ lineHeight: 1.8 }}>
-          「心理资源聚合」是一个独立的中文心理学资源导航与科普平台。我们不做自营在线诊疗，
-          而是聚合全球优质的心理网站、公益求助渠道与公开版权测评，帮助用户用最少的操作找到可靠资源。
+          {t.pages.aboutWhoText}
         </p>
       </section>
 
       <section style={{ marginBottom: 28 }}>
-        <h2 style={{ fontSize: 20 }}>我们的目标</h2>
+        <h2 style={{ fontSize: 20 }}>{t.pages.aboutGoal}</h2>
         <ul style={{ lineHeight: 1.9 }}>
-          <li><strong>降低寻找成本：</strong>把分散、真假难辨的心理资源集中到一处，3 次点击内可达。</li>
-          <li><strong>守住安全底线：</strong>全站常驻危机干预入口，优先呈现权威与公益渠道。</li>
-          <li><strong>尊重隐私：</strong>测评免费、匿名，不收集可识别个人身份的信息。</li>
+          <li>{t.pages.aboutGoal1}</li>
+          <li>{t.pages.aboutGoal2}</li>
+          <li>{t.pages.aboutGoal3}</li>
         </ul>
       </section>
 
       <section style={{ marginBottom: 28 }}>
-        <h2 style={{ fontSize: 20 }}>专业性与可信度（E-E-A-T）</h2>
+        <h2 style={{ fontSize: 20 }}>{t.pages.aboutEeat}</h2>
         <p style={{ lineHeight: 1.8 }}>
-          本平台内容基于公开、可核查的来源（如全球心理学网站调研、公共领域量表 PHQ-9 / GAD-7、
-          各国官方危机干预热线）。所有测评结果均标注「仅供参考，不构成诊断」。
-          我们不提供医疗建议；涉及诊断与治疗，请务必咨询持证专业人士。
+          {t.pages.aboutEeatText}
         </p>
       </section>
 
       <section className="card" style={{ background: 'var(--surface-3)' }}>
-        <h2 style={{ fontSize: 18, margin: '0 0 8px' }}>免责声明</h2>
+        <h2 style={{ fontSize: 18, margin: '0 0 8px' }}>{t.pages.aboutDisclaimerTitle}</h2>
         <p style={{ color: 'var(--ink)', fontSize: 14, margin: 0, lineHeight: 1.7 }}>
-          本站为信息导航与科普用途，不构成任何医疗、心理或法律建议。若你正经历危机，
-          请立即使用<a href="/helplines" style={{ color: 'var(--danger)' }}>求助资源</a>中的热线。
+          {t.pages.aboutDisclaimerText}{' '}
+          <a href={lp('/helplines')} style={{ color: 'var(--danger)' }}>{t.sections.helplines}</a>
         </p>
       </section>
 
       <section style={{ marginTop: 28 }}>
-        <h2 style={{ fontSize: 20 }}>常见问题</h2>
+        <h2 style={{ fontSize: 20 }}>{t.pages.aboutFaqTitle}</h2>
         <div style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
           {FAQ.map((f) => (
             <div key={f.q}>

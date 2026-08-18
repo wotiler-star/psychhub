@@ -1,6 +1,6 @@
 import type { Metadata } from 'next';
 import Link from 'next/link';
-import { getArticle, getArticles } from '@/lib/api';
+import { getArticle, getArticles, getAssessments } from '@/lib/api';
 import { ogImageUrl } from '@/lib/og';
 import ShareBar from '@/components/ShareBar';
 import ArticleFeedback from '@/components/ArticleFeedback';
@@ -9,14 +9,12 @@ import ArticleToc from '@/components/ArticleToc';
 import ReadingProgress from '@/components/ReadingProgress';
 import { SITE_URL, breadcrumbJsonLd, itemListJsonLd, JsonLdScript } from '@/lib/jsonld';
 import Breadcrumb from '@/components/Breadcrumb';
+import { localizedPath, localeAlternates } from '@/i18n/helpers';
+import { getLocaleFromHeader } from '@/i18n/server';
+import { getDict } from '@/i18n/dictionaries';
+import type { Locale } from '@/i18n/config';
 
 export const dynamic = 'force-dynamic';
-
-const CATEGORY_LABEL: Record<string, string> = {
-  POPSCI: '科普',
-  RESEARCH: '研究',
-  NEWS: '资讯',
-};
 
 // 轻量内容解析：把种子里的纯文本按段落 / 编号条目 / 列表项拆成结构化块，
 // 让「1. 2. 3.」渲染为真正的有序列表，普通文本渲染为段落；
@@ -75,23 +73,32 @@ function parseContent(content: string): Block[] {
   return blocks;
 }
 
+function catLabel(cat: string | null | undefined, t: ReturnType<typeof getDict>): string {
+  if (cat === 'POPSCI') return t.pages.catPop;
+  if (cat === 'RESEARCH') return t.pages.catResearch;
+  if (cat === 'NEWS') return t.pages.catNews;
+  return cat ?? t.sections.articles;
+}
+
 export async function generateMetadata({
   params,
 }: {
   params: Promise<{ slug: string }>;
 }): Promise<Metadata> {
   const { slug } = await params;
+  const locale = await getLocaleFromHeader();
+  const t = getDict(locale);
   try {
     const a = await getArticle(slug);
     const ogImage = ogImageUrl({
       title: a.title,
       subtitle: a.excerpt || undefined,
-      tag: CATEGORY_LABEL[a.category ?? ''] ?? '心理资讯',
+      tag: catLabel(a.category, t),
     });
     return {
-      title: `${a.title} | 心理资讯`,
+      title: { absolute: `${a.title} | ${t.sections.articles}` },
       description: a.excerpt || a.title,
-      alternates: { canonical: `/articles/${a.slug}` },
+      ...localeAlternates(locale, `/articles/${a.slug}`),
       openGraph: {
         type: 'article',
         title: a.title,
@@ -106,7 +113,7 @@ export async function generateMetadata({
       },
     };
   } catch {
-    return { title: '资讯详情 | 心理资源聚合' };
+    return { title: { absolute: t.sections.articles }, ...localeAlternates(locale, `/articles/${slug}`) };
   }
 }
 
@@ -116,16 +123,19 @@ export default async function ArticleDetailPage({
   params: Promise<{ slug: string }>;
 }) {
   const { slug } = await params;
+  const locale = await getLocaleFromHeader();
+  const t = getDict(locale);
+  const lp = (p: string) => localizedPath(p, locale);
   let article;
   try {
     article = await getArticle(slug);
   } catch {
     return (
       <div className="container-page" style={{ padding: '48px 20px', textAlign: 'center' }}>
-        <h1>资讯不存在或暂不可用</h1>
+        <h1>{t.pages.aNotFound}</h1>
         <p style={{ color: 'var(--muted)' }}>
-          <Link href="/articles" style={{ color: 'var(--brand)' }}>
-            返回心理资讯
+          <Link href={lp('/articles')} style={{ color: 'var(--brand)' }}>
+            {t.article.backToArticles}
           </Link>
         </p>
       </div>
@@ -142,13 +152,48 @@ export default async function ArticleDetailPage({
   const related = all
     .filter((a) => a.slug !== article.slug)
     .map((a) => {
-      const sharedTags = a.tags.filter((t) => article.tags.includes(t)).length;
+      const sharedTags = a.tags.filter((x) => article.tags.includes(x)).length;
       const sameCat = a.category === article.category ? 1 : 0;
       return { a, score: sharedTags * 2 + sameCat };
     })
     .sort((x, y) => y.score - x.score)
     .slice(0, 3)
     .map((x) => x.a);
+
+  // 内容 → 测评跨链（C→A）：文章标签 / 类目映射到测评类型，推荐相关自评量表
+  const ARTICLE_TAG_TO_TYPE: Record<string, string[]> = {
+    抑郁: ['DEPRESSION'],
+    焦虑: ['ANXIETY'],
+    情绪: ['DEPRESSION', 'ANXIETY', 'STRESS'],
+    压力: ['STRESS'],
+    睡眠: ['SLEEP'],
+    自尊: ['SELF_ESTEEM'],
+    自信: ['SELF_ESTEEM'],
+    幸福感: ['WELLBEING'],
+    正念: ['WELLBEING'],
+    个人成长: ['WELLBEING'],
+    人格: ['PERSONALITY'],
+    性格: ['PERSONALITY'],
+  };
+  const CATEGORY_TO_TYPE: Record<string, string[]> = {
+    POPSCI: ['WELLBEING', 'SELF_ESTEEM'],
+    RESEARCH: ['STRESS', 'DEPRESSION'],
+    NEWS: ['STRESS', 'ANXIETY'],
+  };
+  const targetTypes = Array.from(
+    new Set([
+      ...article.tags.flatMap((x) => ARTICLE_TAG_TO_TYPE[x] ?? []),
+      ...(CATEGORY_TO_TYPE[article.category ?? ''] ?? []),
+    ]),
+  );
+  const allAssessments = await getAssessments().catch(() => []);
+  const relatedAssessments = targetTypes.length
+    ? allAssessments
+        .map((a) => ({ a, score: a.type && targetTypes.includes(a.type) ? 2 : 0 }))
+        .sort((x, y) => y.score - x.score)
+        .slice(0, 3)
+        .map((r) => r.a)
+    : [];
 
   const jsonLd = {
     '@context': 'https://schema.org',
@@ -158,7 +203,7 @@ export default async function ArticleDetailPage({
     image: `${SITE_URL}${ogImageUrl({
       title: article.title,
       subtitle: article.excerpt || undefined,
-      tag: CATEGORY_LABEL[article.category ?? ''] ?? '心理资讯',
+      tag: catLabel(article.category, t),
     })}`,
     datePublished: article.publishedAt,
     author: { '@type': 'Organization', name: article.author || '心理资源聚合' },
@@ -179,24 +224,24 @@ export default async function ArticleDetailPage({
       />
       <JsonLdScript
         data={breadcrumbJsonLd([
-          { name: '首页', url: '/' },
-          { name: '心理资讯', url: '/articles' },
-          { name: article.title, url: `/articles/${article.slug}` },
+          { name: t.nav.home, url: lp('/') },
+          { name: t.sections.articles, url: lp('/articles') },
+          { name: article.title, url: lp(`/articles/${article.slug}`) },
         ])}
       />
 
       <Breadcrumb
         items={[
-          { name: '首页', href: '/' },
-          { name: '心理资讯', href: '/articles' },
-          { name: article.title, href: `/articles/${article.slug}` },
+          { name: t.nav.home, href: lp('/') },
+          { name: t.sections.articles, href: lp('/articles') },
+          { name: article.title, href: lp(`/articles/${article.slug}`) },
         ]}
       />
 
       <ReadingProgress />
 
       <div style={{ fontSize: 13, color: 'var(--brand)', fontWeight: 700 }}>
-        {article.category ? (CATEGORY_LABEL[article.category] ?? article.category) : '资讯'}
+        {catLabel(article.category, t)}
       </div>
       <h1 style={{ fontSize: 30, lineHeight: 1.35, margin: '8px 0 12px' }}>{article.title}</h1>
 
@@ -212,10 +257,10 @@ export default async function ArticleDetailPage({
         }}
       >
         <span>{article.publishedAt}</span>
-        {article.author && <span>· 作者 {article.author}</span>}
+        {article.author && <span>· {t.article.author} {article.author}</span>}
         {article.sourceName && (
           <span>
-            · 来源{' '}
+            · {t.article.source} {' '}
             {article.sourceUrl ? (
               <a
                 href={article.sourceUrl}
@@ -238,27 +283,27 @@ export default async function ArticleDetailPage({
           ogImage={ogImageUrl({
             title: article.title,
             subtitle: article.excerpt || undefined,
-            tag: CATEGORY_LABEL[article.category ?? ''] ?? '心理资讯',
+            tag: catLabel(article.category, t),
           })}
         />
         <BookmarkButton
           type="article"
           id={article.slug}
           title={article.title}
-          url={`/articles/${article.slug}`}
+          url={lp(`/articles/${article.slug}`)}
           subtitle={article.excerpt ?? undefined}
         />
       </div>
 
       <div style={{ display: 'flex', gap: 6, flexWrap: 'wrap', margin: '8px 0 20px' }}>
-        {article.tags.map((t) => (
+        {article.tags.map((x) => (
           <Link
-            key={t}
-            href={`/articles?tag=${encodeURIComponent(t)}`}
+            key={x}
+            href={lp(`/articles?tag=${encodeURIComponent(x)}`)}
             className="chip"
             style={{ fontSize: 12, background: 'var(--surface-2)', color: 'var(--muted)', textDecoration: 'none' }}
           >
-            {t}
+            {x}
           </Link>
         ))}
       </div>
@@ -313,14 +358,14 @@ export default async function ArticleDetailPage({
         className="callout"
         style={{ marginTop: 28, fontSize: 14, color: 'var(--muted)', lineHeight: 1.7 }}
       >
-        ⚠ 本文内容仅供心理健康科普与自我觉察参考，<strong>不构成医学诊断或治疗建议</strong>。如有持续困扰，请使用本站「求助资源」中的专业热线。
+        {t.pages.aCallout}
       </div>
 
       <ArticleFeedback slug={article.slug} />
 
       {related.length > 0 && (
         <div style={{ marginTop: 36, borderTop: '1px solid #e5e7eb', paddingTop: 24 }}>
-          <h2 style={{ fontSize: 20, margin: '0 0 16px' }}>相关阅读</h2>
+          <h2 style={{ fontSize: 20, margin: '0 0 16px' }}>{t.pages.aRelated}</h2>
           <div
             style={{
               display: 'grid',
@@ -331,12 +376,12 @@ export default async function ArticleDetailPage({
             {related.map((a) => (
               <Link
                 key={a.id}
-                href={`/articles/${a.slug}`}
+                href={lp(`/articles/${a.slug}`)}
                 className="card"
                 style={{ color: 'var(--ink)', textDecoration: 'none', padding: 16 }}
               >
                 <div style={{ fontSize: 12, color: 'var(--brand)', fontWeight: 700 }}>
-                  {a.category ? (CATEGORY_LABEL[a.category] ?? a.category) : '资讯'}
+                  {catLabel(a.category, t)}
                 </div>
                 <div style={{ fontSize: 15, fontWeight: 600, margin: '6px 0 4px', lineHeight: 1.4 }}>
                   {a.title}
@@ -346,14 +391,49 @@ export default async function ArticleDetailPage({
             ))}
           </div>
           <div style={{ marginTop: 16, fontSize: 13, color: 'var(--muted)' }}>
-            按标签浏览更多：
-            {article.tags.map((t) => (
+            {t.pages.aBrowseByTag}
+            {article.tags.map((x) => (
               <Link
-                key={t}
-                href={`/tags/${encodeURIComponent(t)}`}
+                key={x}
+                href={lp(`/tags/${encodeURIComponent(x)}`)}
                 style={{ color: 'var(--brand)', marginLeft: 8, textDecoration: 'none' }}
               >
-                #{t}
+                #{x}
+              </Link>
+            ))}
+          </div>
+        </div>
+      )}
+
+      {relatedAssessments.length > 0 && (
+        <div style={{ marginTop: 36, borderTop: '1px solid var(--line)', paddingTop: 24 }}>
+          <h2 style={{ fontSize: 20, margin: '0 0 6px' }}>{t.article.relatedAssessments}</h2>
+          <p style={{ color: 'var(--muted)', fontSize: 14, margin: '0 0 16px', lineHeight: 1.7 }}>
+            {t.pages.aRelatedAssessDesc}
+          </p>
+          <div
+            style={{
+              display: 'grid',
+              gridTemplateColumns: 'repeat(auto-fill, minmax(220px, 1fr))',
+              gap: 12,
+            }}
+          >
+            {relatedAssessments.map((a) => (
+              <Link
+                key={a.slug}
+                href={lp(`/assessments/${a.slug}`)}
+                className="card"
+                style={{ color: 'var(--ink)', textDecoration: 'none', padding: 16, display: 'flex', flexDirection: 'column', gap: 8 }}
+              >
+                <div style={{ fontSize: 12, color: 'var(--brand)', fontWeight: 700 }}>
+                  {a.type ?? t.assessment.title}
+                </div>
+                <h3 style={{ margin: 0, fontSize: 15, lineHeight: 1.4 }}>{a.title}</h3>
+                {a.description && (
+                  <p style={{ fontSize: 13, color: 'var(--muted)', margin: 0, lineHeight: 1.6 }}>
+                    {a.description}
+                  </p>
+                )}
               </Link>
             ))}
           </div>
@@ -361,8 +441,8 @@ export default async function ArticleDetailPage({
       )}
 
       <div style={{ marginTop: 28 }}>
-        <Link href="/articles" className="chip" style={{ background: 'var(--brand)', color: 'var(--btn-text)' }}>
-          ← 返回心理资讯
+        <Link href={lp('/articles')} className="chip" style={{ background: 'var(--brand)', color: 'var(--btn-text)' }}>
+          ← {t.article.backToArticles}
         </Link>
       </div>
 
@@ -371,7 +451,7 @@ export default async function ArticleDetailPage({
           data={itemListJsonLd(
             related.map((a) => ({
               name: a.title,
-              url: `/articles/${a.slug}`,
+              url: lp(`/articles/${a.slug}`),
               description: a.excerpt ?? undefined,
             })),
           )}

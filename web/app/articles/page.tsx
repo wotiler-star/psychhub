@@ -8,6 +8,9 @@ import SearchBox from '@/components/SearchBox';
 import EmptyState from '@/components/EmptyState';
 import { breadcrumbJsonLd, itemListJsonLd, JsonLdScript } from '@/lib/jsonld';
 import { paginate, withPagination } from '@/lib/paginate';
+import { localizedPath, localeAlternates } from '@/i18n/helpers';
+import { getLocaleFromHeader } from '@/i18n/server';
+import { getDict } from '@/i18n/dictionaries';
 
 export const dynamic = 'force-dynamic';
 
@@ -28,14 +31,15 @@ export async function generateMetadata({
 }): Promise<Metadata> {
   const { category, tag, sort, view, q, page: pageStr } = await searchParams;
   const page = Number(pageStr) || 1;
+  const locale = await getLocaleFromHeader();
+  const t = getDict(locale);
   const all = await getArticles({ category, q }).catch(() => []);
   let list = tag ? all.filter((a) => a.tags.includes(tag)) : all;
   return withPagination(
     {
-      title: '心理资讯 | 科普 · 研究 · 求助资源',
-      description:
-        '聚合原创与引用的心理学科普、研究解读与求助资源，帮助你在信息洪流中快速获取可信内容。所有内容标注来源，附「仅供参考」声明。',
-      alternates: { canonical: '/articles' },
+      title: { absolute: t.meta.articles.title },
+      description: t.meta.articles.desc,
+      ...localeAlternates(locale, '/articles'),
     },
     '/articles',
     { category, tag, sort, view, q },
@@ -59,6 +63,9 @@ export default async function ArticlesPage({
   searchParams: Promise<SP>;
 }) {
   const { category, tag, archive, sort, view, q, page: pageStr } = await searchParams;
+  const locale = await getLocaleFromHeader();
+  const t = getDict(locale);
+  const lp = (p: string) => localizedPath(p, locale);
   const all = await getArticles({ category, q }).catch(() => []);
 
   const categoryCounts: Record<string, number> = {};
@@ -105,29 +112,29 @@ export default async function ArticlesPage({
     }
     params.delete('page');
     const qs = params.toString();
-    return `/articles${qs ? '?' + qs : ''}`;
+    return lp(`/articles${qs ? '?' + qs : ''}`);
   };
 
   return (
     <div className="container-page" style={{ padding: '32px 20px 48px' }}>
       <JsonLdScript
         data={breadcrumbJsonLd([
-          { name: '首页', url: '/' },
-          { name: '心理资讯', url: '/articles' },
+          { name: t.nav.home, url: lp('/') },
+          { name: t.sections.articles, url: lp('/articles') },
         ])}
       />
       <JsonLdScript
         data={itemListJsonLd(
           articles.map((a) => ({
             name: a.title,
-            url: `/articles/${a.slug}`,
+            url: lp(`/articles/${a.slug}`),
             description: a.excerpt ?? undefined,
           })),
         )}
       />
-      <h1 style={{ fontSize: 28, margin: '0 0 6px' }}>心理资讯</h1>
+      <h1 style={{ fontSize: 28, margin: '0 0 6px' }}>{t.article.title}</h1>
       <p style={{ color: 'var(--muted)', fontSize: 16, margin: '0 0 20px', maxWidth: 680 }}>
-        原创与引用的心理学科普、研究解读与求助资源汇总。所有内容均标注来源，并附「仅供参考」声明。
+        {t.article.subtitle}
       </p>
 
       <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap', marginBottom: 16, alignItems: 'center' }}>
@@ -256,7 +263,7 @@ export default async function ArticlesPage({
               className="card"
               style={{ display: 'flex', alignItems: 'flex-start', gap: 12, padding: '14px 16px', flexWrap: 'wrap' }}
             >
-              <Link href={`/articles/${a.slug}`} style={{ flex: 1, minWidth: 220, color: 'var(--ink)', textDecoration: 'none' }}>
+              <Link href={lp(`/articles/${a.slug}`)} style={{ flex: 1, minWidth: 220, color: 'var(--ink)', textDecoration: 'none' }}>
                 <div style={{ fontSize: 12, color: 'var(--brand)', fontWeight: 700 }}>
                   {a.category ? (CATEGORY_LABEL[a.category] ?? a.category) : '资讯'}
                 </div>
@@ -289,7 +296,7 @@ export default async function ArticlesPage({
                   subtitle={a.excerpt ?? undefined}
                 />
               </div>
-              <Link href={`/articles/${a.slug}`} style={{ display: 'block', color: 'var(--ink)', textDecoration: 'none', paddingRight: 36 }}>
+              <Link href={lp(`/articles/${a.slug}`)} style={{ display: 'block', color: 'var(--ink)', textDecoration: 'none', paddingRight: 36 }}>
                 <div style={{ fontSize: 13, color: 'var(--brand)', fontWeight: 700 }}>
                   {a.category ? (CATEGORY_LABEL[a.category] ?? a.category) : '资讯'}
                 </div>
@@ -311,7 +318,7 @@ export default async function ArticlesPage({
         </div>
       )}
 
-      <Pager basePath="/articles" params={{ category, tag, archive, sort, view, q }} page={page} totalPages={totalPages} />
+      <Pager basePath={lp('/articles')} params={{ category, tag, archive, sort, view, q }} page={page} totalPages={totalPages} />
     </div>
   );
 }

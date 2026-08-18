@@ -1,15 +1,22 @@
 import type { Metadata } from 'next';
 import { getArticles, getResources, getCounselors } from '@/lib/api';
 import SearchResults from '@/components/SearchResults';
+import { localizedPath, localeAlternates } from '@/i18n/helpers';
+import { getLocaleFromHeader } from '@/i18n/server';
+import { getDict } from '@/i18n/dictionaries';
 
 export const dynamic = 'force-dynamic';
 
-export const metadata: Metadata = {
-  title: '全站搜索 | 心理资源聚合',
-  description: '在心理资源、科普文章与咨询师中检索你需要的内容。',
-  robots: { index: false, follow: true },
-  alternates: { canonical: '/search' },
-};
+export async function generateMetadata(): Promise<Metadata> {
+  const locale = await getLocaleFromHeader();
+  const t = getDict(locale);
+  return {
+    title: { absolute: t.meta.search.title },
+    description: t.meta.search.desc,
+    robots: { index: false, follow: true },
+    ...localeAlternates(locale, '/search'),
+  };
+}
 
 type SearchParams = { q?: string };
 
@@ -20,6 +27,9 @@ export default async function SearchPage({
 }) {
   const { q = '' } = await searchParams;
   const query = (q || '').trim();
+  const locale = await getLocaleFromHeader();
+  const t = getDict(locale);
+  const lp = (p: string) => localizedPath(p, locale);
 
   const [articles, resources, counselors] = await Promise.all([
     getArticles().catch(() => []),
@@ -29,17 +39,17 @@ export default async function SearchPage({
 
   return (
     <div className="container-page" style={{ padding: '32px 20px 56px', maxWidth: 920 }}>
-      <h1 style={{ fontSize: 26, margin: '0 0 6px' }}>全站搜索</h1>
+      <h1 style={{ fontSize: 26, margin: '0 0 6px' }}>{t.sections.search}</h1>
       <p style={{ color: 'var(--muted)', margin: '0 0 20px', fontSize: 14 }}>
-        跨「资源 · 文章 · 咨询师」检索；结果按相关度排序。
+        {t.pages.searchSubtitle}
       </p>
 
-      <form action="/search" method="get" style={{ marginBottom: 24 }}>
+      <form action={lp('/search')} method="get" style={{ marginBottom: 24 }}>
         <input
           name="q"
           defaultValue={query}
-          placeholder="输入关键词，如：抑郁、焦虑、咨询师、睡眠…"
-          aria-label="搜索关键词"
+          placeholder={t.pages.searchPlaceholder}
+          aria-label={t.pages.searchPlaceholder}
           autoFocus
           style={{
             width: '100%',

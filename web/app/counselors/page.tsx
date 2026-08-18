@@ -11,6 +11,9 @@ import SearchBox from '@/components/SearchBox';
 import EmptyState from '@/components/EmptyState';
 import { breadcrumbJsonLd, itemListJsonLd, JsonLdScript } from '@/lib/jsonld';
 import { paginate, withPagination } from '@/lib/paginate';
+import { localizedPath, localeAlternates } from '@/i18n/helpers';
+import { getLocaleFromHeader } from '@/i18n/server';
+import { getDict } from '@/i18n/dictionaries';
 
 export const dynamic = 'force-dynamic';
 
@@ -36,6 +39,8 @@ export async function generateMetadata({
 }): Promise<Metadata> {
   const sp = await searchParams;
   const page = Number(sp.page) || 1;
+  const locale = await getLocaleFromHeader();
+  const t = getDict(locale);
   const query = {
     specialty: sp.specialty,
     region: sp.region,
@@ -46,10 +51,9 @@ export async function generateMetadata({
   const filtered = await getCounselors(query).catch(() => [] as Counselor[]);
   return withPagination(
     {
-      title: '找心理咨询师 | 聚合推荐与转介',
-      description:
-        '按擅长议题、地区与价格筛选心理咨询师与执业者。本平台仅做信息聚合与转介，不构成诊疗建议；紧急情况请优先拨打危机干预热线。',
-      alternates: { canonical: '/counselors' },
+      title: { absolute: t.meta.counselors.title },
+      description: t.meta.counselors.desc,
+      ...localeAlternates(locale, '/counselors'),
     },
     '/counselors',
     sp,
@@ -65,6 +69,9 @@ export default async function CounselorsPage({
   searchParams: Promise<SP>;
 }) {
   const sp = await searchParams;
+  const locale = await getLocaleFromHeader();
+  const t = getDict(locale);
+  const lp = (p: string) => localizedPath(p, locale);
 
   const query = {
     specialty: sp.specialty,
@@ -130,24 +137,22 @@ export default async function CounselorsPage({
     <div className="container-page" style={{ padding: '32px 20px 48px' }}>
       <JsonLdScript
         data={breadcrumbJsonLd([
-          { name: '首页', url: '/' },
-          { name: '找心理咨询师', url: '/counselors' },
+          { name: t.nav.home, url: lp('/') },
+          { name: t.sections.counselors, url: lp('/counselors') },
         ])}
       />
       <JsonLdScript
         data={itemListJsonLd(
           list.map((c) => ({
             name: c.name,
-            url: `/counselors/${c.id}`,
+            url: lp(`/counselors/${c.id}`),
             description: [c.title, ...c.specialties].filter(Boolean).join(' · '),
           })),
         )}
       />
-      <h1 style={{ fontSize: 28, margin: '0 0 6px' }}>找心理咨询师</h1>
+      <h1 style={{ fontSize: 28, margin: '0 0 6px' }}>{t.sections.counselors}</h1>
       <p style={{ color: 'var(--muted)', fontSize: 16, margin: '0 0 24px', maxWidth: 720, lineHeight: 1.7 }}>
-        按擅长议题、地区与价格筛选咨询师与执业者。
-        <strong>本平台仅做信息聚合与转介，不构成任何诊疗建议。</strong>
-        如遇紧急危机，请优先拨打公益心理危机干预热线。
+        {t.pages.counselorsIntro}
       </p>
 
       <FilterPanel>
@@ -173,17 +178,17 @@ export default async function CounselorsPage({
         }}
       >
         <div style={{ fontSize: 14, color: 'var(--muted)' }}>
-          共 {list.length} 位咨询师
-          {sp.specialty || sp.approach || sp.language || sp.region || sp.maxPrice || sp.minRating || sp.remote || sp.q ? '（已按筛选条件）' : ''}
+          {t.pages.counselorsCount.replace('{n}', String(list.length))}
+          {sp.specialty || sp.approach || sp.language || sp.region || sp.maxPrice || sp.minRating || sp.remote || sp.q ? t.pages.filteredNote : ''}
         </div>
         <div style={{ display: 'flex', gap: 8, alignItems: 'center', flexWrap: 'wrap' }}>
-          <SearchBox paramName="q" placeholder="搜索咨询师 / 议题…" width={180} />
+          <SearchBox paramName="q" placeholder={t.pages.counselorsSearchPh} width={180} />
           <ViewToggle />
         </div>
       </div>
 
       {list.length === 0 ? (
-        <EmptyState title="没有符合条件的咨询师" hint="试试放宽筛选条件，或更换关键词。" />
+        <EmptyState title={t.pages.counselorsEmpty} hint={t.pages.counselorsEmptyHint} />
       ) : sp.view === 'list' ? (
         <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
           {pageItems.map((c) => (
@@ -193,15 +198,15 @@ export default async function CounselorsPage({
               style={{ display: 'flex', alignItems: 'center', gap: 12, padding: '12px 16px', flexWrap: 'wrap' }}
             >
               <Link
-                href={`/counselors/${c.id}`}
+                href={lp(`/counselors/${c.id}`)}
                 style={{ flex: 1, minWidth: 220, color: 'var(--ink)', textDecoration: 'none' }}
               >
                 <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
                   <h3 style={{ margin: 0, fontSize: 16 }}>{c.name}</h3>
-                  {c.featured && <span className="chip chip-green">精选</span>}
+                  {c.featured && <span className="chip chip-green">{t.pages.featured}</span>}
                 </div>
                 <div style={{ fontSize: 13, color: 'var(--muted)', marginTop: 2 }}>
-                  {[c.title, c.region, c.remote ? '远程' : null, c.pricePerSession != null ? `¥${c.pricePerSession}/次` : '价格面议', c.rating != null ? `★ ${c.rating}` : null]
+                  {[c.title, c.region, c.remote ? t.pages.remote : null, c.pricePerSession != null ? `¥${c.pricePerSession}/次` : t.pages.priceOnRequest, c.rating != null ? `★ ${c.rating}` : null]
                     .filter(Boolean)
                     .join(' · ')}
                 </div>
@@ -217,7 +222,7 @@ export default async function CounselorsPage({
                 type="counselor"
                 id={c.id}
                 title={`${c.name}${c.title ? ' · ' + c.title : ''}`}
-                url={`/counselors/${c.id}`}
+                url={lp(`/counselors/${c.id}`)}
                 subtitle={c.specialties.join('、')}
               />
             </div>
@@ -232,17 +237,17 @@ export default async function CounselorsPage({
                   type="counselor"
                   id={c.id}
                   title={`${c.name}${c.title ? ' · ' + c.title : ''}`}
-                  url={`/counselors/${c.id}`}
+                  url={lp(`/counselors/${c.id}`)}
                   subtitle={c.specialties.join('、')}
                 />
               </div>
-              <Link href={`/counselors/${c.id}`} style={{ display: 'block', color: 'var(--ink)', textDecoration: 'none', paddingRight: 36 }}>
+              <Link href={lp(`/counselors/${c.id}`)} style={{ display: 'block', color: 'var(--ink)', textDecoration: 'none', paddingRight: 36 }}>
                 <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', gap: 8 }}>
                   <div>
                     <h3 style={{ margin: '0', fontSize: 18 }}>{c.name}</h3>
                     {c.title && <div style={{ fontSize: 13, color: 'var(--muted)', marginTop: 2 }}>{c.title}</div>}
                   </div>
-                  {c.featured && <span className="chip chip-green">精选</span>}
+                  {c.featured && <span className="chip chip-green">{t.pages.featured}</span>}
                 </div>
                 <div style={{ display: 'flex', flexWrap: 'wrap', gap: 6, marginTop: 8 }}>
                   {c.specialties.slice(0, 3).map((s) => (
@@ -253,8 +258,8 @@ export default async function CounselorsPage({
                 </div>
                 <div style={{ fontSize: 13, color: 'var(--muted)', marginTop: 8 }}>
                   {c.region}
-                  {c.remote ? ' · 支持远程' : ''} ·{' '}
-                  {c.pricePerSession != null ? `¥${c.pricePerSession}/次` : '价格面议'}
+                  {c.remote ? ` · ${t.pages.remote}` : ''} ·{' '}
+                  {c.pricePerSession != null ? `¥${c.pricePerSession}/次` : t.pages.priceOnRequest}
                   {c.rating != null && ` · ★ ${c.rating}`}
                 </div>
                 {c.bio && (
@@ -279,7 +284,7 @@ export default async function CounselorsPage({
         </div>
       )}
 
-      <Pager basePath="/counselors" params={sp} page={page} totalPages={totalPages} />
+      <Pager basePath={lp('/counselors')} params={sp} page={page} totalPages={totalPages} />
     </div>
   );
 }

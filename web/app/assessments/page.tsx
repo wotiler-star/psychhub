@@ -7,6 +7,9 @@ import SearchBox from '@/components/SearchBox';
 import EmptyState from '@/components/EmptyState';
 import { breadcrumbJsonLd, itemListJsonLd, JsonLdScript } from '@/lib/jsonld';
 import { paginate, withPagination } from '@/lib/paginate';
+import { localizedPath, localeAlternates } from '@/i18n/helpers';
+import { getLocaleFromHeader } from '@/i18n/server';
+import { getDict } from '@/i18n/dictionaries';
 
 export const dynamic = 'force-dynamic';
 
@@ -17,13 +20,14 @@ export async function generateMetadata({
 }): Promise<Metadata> {
   const sp = await searchParams;
   const page = Number(sp.page) || 1;
+  const locale = await getLocaleFromHeader();
+  const t = getDict(locale);
   const assessments = await getAssessments({ q: sp.q, type: sp.type }).catch(() => []);
   return withPagination(
     {
-      title: '心理测评 | PHQ-9 / GAD-7 免费自测',
-      description:
-        '使用公共领域权威量表（PHQ-9 抑郁、GAD-7 焦虑）进行免费自评，即时计分与分级解读。结果仅供参考，不构成诊断。',
-      alternates: { canonical: '/assessments' },
+      title: { absolute: t.meta.assessments.title },
+      description: t.meta.assessments.desc,
+      ...localeAlternates(locale, '/assessments'),
     },
     '/assessments',
     sp,
@@ -56,6 +60,9 @@ interface SP {
 export default async function AssessmentsPage({ searchParams }: { searchParams: Promise<SP> }) {
   const sp = await searchParams;
   const page = Number(sp.page) || 1;
+  const locale = await getLocaleFromHeader();
+  const t = getDict(locale);
+  const lp = (p: string) => localizedPath(p, locale);
 
   const [all, list] = await Promise.all([
     getAssessments().catch(() => []),
@@ -88,30 +95,29 @@ export default async function AssessmentsPage({ searchParams }: { searchParams: 
     }
     params.delete('page');
     const qs = params.toString();
-    return `/assessments${qs ? '?' + qs : ''}`;
+    return lp(`/assessments${qs ? '?' + qs : ''}`);
   };
 
   return (
     <div className="container-page" style={{ padding: '32px 20px 48px' }}>
       <JsonLdScript
         data={breadcrumbJsonLd([
-          { name: '首页', url: '/' },
-          { name: '心理测评', url: '/assessments' },
+          { name: t.nav.home, url: lp('/') },
+          { name: t.sections.assessments, url: lp('/assessments') },
         ])}
       />
       <JsonLdScript
         data={itemListJsonLd(
           list.map((a) => ({
             name: a.title,
-            url: `/assessments/${a.slug}`,
+            url: lp(`/assessments/${a.slug}`),
             description: a.description ?? undefined,
           })),
         )}
       />
-      <h1 style={{ fontSize: 28, margin: '0 0 6px' }}>心理测评</h1>
+      <h1 style={{ fontSize: 28, margin: '0 0 6px' }}>{t.assessment.title}</h1>
       <p style={{ color: 'var(--muted)', fontSize: 16, margin: '0 0 20px', maxWidth: 680 }}>
-        以下测评使用公共领域 / 授权公开的权威量表，基础测评免费、匿名、即时出分；部分「深度测评」为会员专属。
-        <strong>结果仅供参考，不构成任何医疗诊断或治疗建议。</strong>
+        {t.assessment.subtitle}
       </p>
 
       <div style={{ display: 'flex', gap: 12, flexWrap: 'wrap', alignItems: 'center', marginBottom: 16 }}>
@@ -174,7 +180,7 @@ export default async function AssessmentsPage({ searchParams }: { searchParams: 
       ) : (
         <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(300px, 1fr))', gap: 16 }}>
           {pageItems.map((a) => (
-            <Link key={a.id} href={`/assessments/${a.slug}`} className="card" style={{ color: 'var(--ink)', textDecoration: 'none' }}>
+            <Link key={a.id} href={lp(`/assessments/${a.slug}`)} className="card" style={{ color: 'var(--ink)', textDecoration: 'none' }}>
               <div style={{ fontSize: 13, color: 'var(--brand)', fontWeight: 700 }}>
                 {a.type ? (TYPE_LABEL[a.type] ?? a.type) : '测评'}
               </div>
@@ -190,7 +196,7 @@ export default async function AssessmentsPage({ searchParams }: { searchParams: 
         </div>
       )}
 
-      <Pager basePath="/assessments" params={{ q: sp.q, type: sp.type, sort: sp.sort }} page={page} totalPages={totalPages} />
+      <Pager basePath={lp('/assessments')} params={{ q: sp.q, type: sp.type, sort: sp.sort }} page={page} totalPages={totalPages} />
     </div>
   );
 }

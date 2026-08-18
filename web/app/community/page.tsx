@@ -2,17 +2,23 @@ import type { Metadata } from 'next';
 import Link from 'next/link';
 import { getReviews } from '@/lib/api';
 import type { Review } from '@/lib/types';
+import { localizedPath, localeAlternates } from '@/i18n/helpers';
+import { getLocaleFromHeader } from '@/i18n/server';
+import { getDict } from '@/i18n/dictionaries';
 
 export const dynamic = 'force-dynamic';
 
-export const metadata: Metadata = {
-  title: '心理社区 | 咨询师评价与真实反馈',
-  description:
-    '心理社区：用户分享的咨询师真实评价与反馈，帮助你更安心地选择合适的心理支持。',
-  alternates: { canonical: '/community' },
-};
-
 const SITE_URL = process.env.NEXT_PUBLIC_SITE_URL || 'https://psych-hub.example.com';
+
+export async function generateMetadata(): Promise<Metadata> {
+  const locale = await getLocaleFromHeader();
+  const t = getDict(locale);
+  return {
+    title: { absolute: t.meta.community.title },
+    description: t.meta.community.desc,
+    ...localeAlternates(locale, '/community'),
+  };
+}
 
 function fmtDate(s: string) {
   try {
@@ -23,6 +29,9 @@ function fmtDate(s: string) {
 }
 
 export default async function CommunityPage() {
+  const locale = await getLocaleFromHeader();
+  const t = getDict(locale);
+  const lp = (p: string) => localizedPath(p, locale);
   let reviews: Review[] = [];
   try {
     reviews = await getReviews();
@@ -37,27 +46,27 @@ export default async function CommunityPage() {
   const jsonLd = {
     '@context': 'https://schema.org',
     '@type': 'CollectionPage',
-    name: '心理社区 · 咨询师评价',
+    name: `${t.sections.community} · ${t.pages.communityStatReviews}`,
     url: `${SITE_URL}/community`,
   };
 
   return (
     <div className="container-page" style={{ padding: '32px 20px 48px', maxWidth: 920 }}>
-      <h1 style={{ fontSize: 28, margin: '0 0 6px' }}>心理社区</h1>
+      <h1 style={{ fontSize: 28, margin: '0 0 6px' }}>{t.sections.community}</h1>
       <p style={{ color: 'var(--muted)', fontSize: 15, margin: '0 0 20px' }}>
-        这里汇集了用户对咨询师的真实评价与反馈。选择咨询师前，不妨先看看大家的真实声音。
+        {t.pages.communitySubtitle}
       </p>
 
       <div style={{ display: 'flex', gap: 12, flexWrap: 'wrap', marginBottom: 24 }}>
-        <Link className="btn-primary" href="/counselors">
-          找咨询师并评价
+        <Link className="btn-primary" href={lp('/counselors')}>
+          {t.pages.communityFindBtn}
         </Link>
         <Link
-          href="/helplines"
+          href={lp('/helplines')}
           className="chip chip-rose"
           style={{ padding: '10px 16px', minHeight: 44, display: 'inline-flex', alignItems: 'center' }}
         >
-          需要帮助？
+          {t.pages.communityHelpBtn}
         </Link>
       </div>
 
@@ -66,22 +75,22 @@ export default async function CommunityPage() {
         <div style={{ display: 'flex', gap: 12, flexWrap: 'wrap', marginBottom: 24 }}>
           <div className="card" style={{ flex: '1 1 160px', padding: '14px 18px' }}>
             <div style={{ fontSize: 24, fontWeight: 800 }}>{total}</div>
-            <div style={{ fontSize: 13, color: 'var(--muted)' }}>条真实评价</div>
+            <div style={{ fontSize: 13, color: 'var(--muted)' }}>{t.pages.communityStatReviews}</div>
           </div>
           <div className="card" style={{ flex: '1 1 160px', padding: '14px 18px' }}>
             <div style={{ fontSize: 24, fontWeight: 800, color: 'var(--warn)' }}>★ {avgRating.toFixed(1)}</div>
-            <div style={{ fontSize: 13, color: 'var(--muted)' }}>平均评分</div>
+            <div style={{ fontSize: 13, color: 'var(--muted)' }}>{t.pages.communityStatAvg}</div>
           </div>
           <div className="card" style={{ flex: '1 1 160px', padding: '14px 18px' }}>
             <div style={{ fontSize: 24, fontWeight: 800 }}>{counselorCount}</div>
-            <div style={{ fontSize: 13, color: 'var(--muted)' }}>位咨询师被评价</div>
+            <div style={{ fontSize: 13, color: 'var(--muted)' }}>{t.pages.communityStatCounselors}</div>
           </div>
         </div>
       )}
 
       {reviews.length === 0 ? (
         <div className="card" style={{ textAlign: 'center', color: 'var(--muted)' }}>
-          还没有评价。成为第一个分享体验的人吧 → <Link href="/counselors">去评价</Link>
+          {t.pages.communityNoReviews} → <Link href={lp('/counselors')}>{t.pages.communityNoReviewsLink}</Link>
         </div>
       ) : (
         <div style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
@@ -108,10 +117,10 @@ export default async function CommunityPage() {
               <p style={{ margin: '10px 0 0', fontSize: 15, lineHeight: 1.8 }}>{r.content}</p>
               <div style={{ marginTop: 10 }}>
                 <Link
-                  href={`/counselors/${r.counselorId}`}
+                  href={lp(`/counselors/${r.counselorId}`)}
                   style={{ fontSize: 14, color: 'var(--brand)' }}
                 >
-                  关于咨询师：{r.counselorName ?? '查看'} →
+                  {t.counselor.title}：{r.counselorName ?? t.pages.cViewHelplines} →
                 </Link>
               </div>
             </div>
@@ -128,9 +137,9 @@ export default async function CommunityPage() {
           borderRadius: 8,
         }}
       >
-        <strong style={{ fontSize: 15 }}>社区公约</strong>
+        <strong style={{ fontSize: 15 }}>{t.pages.communityCovenant}</strong>
         <p style={{ fontSize: 14, color: 'var(--muted)', margin: '6px 0 0', lineHeight: 1.7 }}>
-          评价仅代表用户个人体验，不构成诊疗建议。本平台不核实咨询关系，亦不替任何咨询师背书。如遇紧急心理危机，请立即拨打求助热线。
+          {t.pages.communityCovenantText}
         </p>
       </div>
 
